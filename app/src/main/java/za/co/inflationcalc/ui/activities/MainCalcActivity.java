@@ -1,17 +1,26 @@
 package za.co.inflationcalc.ui.activities;
 
+import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.InputType;
+import android.text.SpannableString;
 import android.text.TextWatcher;
+import android.text.method.LinkMovementMethod;
+import android.text.util.Linkify;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.codetroopers.betterpickers.datepicker.DatePickerBuilder;
@@ -38,6 +47,7 @@ import za.co.inflationcalc.model.StartDate;
 import za.co.inflationcalc.utils.DateUtil;
 import za.co.inflationcalc.utils.LogUtil;
 import za.co.inflationcalc.utils.MathUtil;
+import za.co.inflationcalc.utils.StringUtil;
 
 /**
  * <p>
@@ -63,6 +73,8 @@ public class MainCalcActivity extends AppCompatActivity {
     private Calendar startCalendarDate;
     private Calendar endCalendarDate;
 
+    private TextView reverseResultTv;
+
     private Button calculateButton;
 
     private StartDate startDate;
@@ -82,6 +94,8 @@ public class MainCalcActivity extends AppCompatActivity {
 
     private Amount amount;
     private Result result;
+
+    private boolean clearInputsClicked;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,6 +142,9 @@ public class MainCalcActivity extends AppCompatActivity {
                 .setFragmentManager(getSupportFragmentManager())
                 .setStyleResId(R.style.BetterPickersDialogFragment_Light);
 
+        // Initialise "Reverse result" text view
+        reverseResultTv = (TextView) findViewById(R.id.reverse_answer);
+
         // Define special symbol for SA Rand currency
         final String randSymbol = "R";
 
@@ -147,7 +164,20 @@ public class MainCalcActivity extends AppCompatActivity {
             }
         });
 
+        amountEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                // Hide keyboard if user presses enter
+                if (event != null && event.getAction() == KeyEvent.ACTION_DOWN &&  (event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
 
+                    InputMethodManager inputMethodManager = (InputMethodManager) getBaseContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    inputMethodManager.hideSoftInputFromWindow(amountEditText.getWindowToken(), 0);
+                    return true;
+                }
+
+                return false;
+            }
+        });
 
         // Used to update the amount object value
         amountEditText.addTextChangedListener(new TextWatcher() {
@@ -158,11 +188,17 @@ public class MainCalcActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-
+                // Ignore, nothing to see here - changing an edit text's content in this callback
+                // will cause an infinite loop
             }
 
             @Override
             public void afterTextChanged(Editable s) {
+                // Ignore all this if the user deciced to clear everything
+                if (clearInputsClicked) {
+                    return;
+                }
+
                 String convertedAmount = s.toString();
 
                 if (s.length() == 0) {
@@ -171,9 +207,10 @@ public class MainCalcActivity extends AppCompatActivity {
                 }
 
                 if (s.length() > 0) {
-                    // Clear answer if the starting amount changes
+                    // Clear answers if the starting amount changes
                     if (resultEditText.getText().length() > 0) {
                         resultEditText.setText("");
+                        reverseResultTv.setVisibility(View.GONE);
                     }
 
                     // If no numerical value is entered, don't bother parsing the edit text input
@@ -423,10 +460,15 @@ public class MainCalcActivity extends AppCompatActivity {
                                     LogUtil.d("Result: " + response.toString());
 
                                     double answer = MathUtil.round(response.optDouble("Answer"), 2);
+                                    double reverseAnswer = MathUtil.round(response.optDouble("AnswerReverse"), 2);
 
-                                    result = new Result(answer);
+                                    result = new Result(answer, reverseAnswer);
 
-                                    resultEditText.setText("R" + String.valueOf(result.getResultValue()));
+                                    resultEditText.setText("R" + String.valueOf(result.getCurrentValue()));
+
+                                    reverseResultTv.setText(StringUtil.format(getString(R.string.reverse_result_answer),
+                                            "R" + String.valueOf(result.getReverseValue())));
+                                    reverseResultTv.setVisibility(View.VISIBLE);
 
                                 } catch (Exception e) {
                                     LogUtil.e("Error in parsing the Inflationcalc response", e);
@@ -463,6 +505,55 @@ public class MainCalcActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_about) {
+
+            final String msg = getString(R.string.about_message);
+
+            final AlertDialog aboutDialog = new AlertDialog.Builder(this)
+                    .setTitle(getString(R.string.about_heading))
+                    .setCancelable(true)
+                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    })
+                    .setIcon(android.R.drawable.ic_dialog_info)
+                    .create();
+
+            try {
+                // Try and Linkify the message
+                final SpannableString spannableMessage = new SpannableString(msg);
+                Linkify.addLinks(spannableMessage, Linkify.ALL);
+
+                aboutDialog.setMessage(spannableMessage);
+                aboutDialog.show();
+
+                // Make the links clickable
+                ((TextView) aboutDialog.findViewById(android.R.id.message)).setMovementMethod(LinkMovementMethod.getInstance());
+            } catch (Exception e) {
+                aboutDialog.setMessage(msg);
+                aboutDialog.show();
+            }
+        } else if (item.getItemId() == R.id.action_clear_inputs) {
+            clearInputsClicked = true;
+
+            startDateEditText.setText("");
+            endDateEditText.setText("");
+            amountEditText.setText("");
+            resultEditText.setText("");
+
+            startDatePicker.setDayOfMonth(-1);
+            startDatePicker.setMonthOfYear(-1);
+            startDatePicker.setYear(-1);
+
+            endDatePicker.setDayOfMonth(-1);
+            endDatePicker.setMonthOfYear(-1);
+            endDatePicker.setYear(-1);
+
+            reverseResultTv.setVisibility(View.GONE);
+
+            clearInputsClicked = false;
+        }
         return super.onOptionsItemSelected(item);
     }
 }

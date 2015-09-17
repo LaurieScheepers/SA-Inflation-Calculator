@@ -1,5 +1,18 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context=".MainCalcActivity">
+    tools:context="com.notify.">
+
+    <item
+        android:id="@+id/action_clear_inputs"
+        android:icon="@drawable/ic_action_content_clear"
+        app:showAsAction="ifRoom"
+        android:title="Clear inputs" />
+
+    <item
+        android:id="@+id/action_about"
+        android:icon="@drawable/ic_action_navigation_more_vert"
+        android:title="@string/action_about"
+        app:showAsAction="ifRoom" />
+
 </menu>
