@@ -157,7 +157,7 @@ public class MainCalcActivity extends AppCompatActivity {
                         amountEditText.setInputType(InputType.TYPE_CLASS_TEXT);
                         amountEditText.setText(randSymbol);
                         amountEditText.setSelection(amountEditText.getText().length());
-                        amountEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
+                        amountEditText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
                     }
                 }
                 return false;
@@ -169,7 +169,7 @@ public class MainCalcActivity extends AppCompatActivity {
             public void onFocusChange(View v, boolean hasFocus) {
                 if (hasFocus) {
                     amountEditText.setSelection(amountEditText.getText().length());
-                    amountEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
+                    amountEditText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
                 }
             }
         });
@@ -204,7 +204,7 @@ public class MainCalcActivity extends AppCompatActivity {
 
             @Override
             public void afterTextChanged(Editable s) {
-                // Ignore all this if the user deciced to clear everything
+                // Ignore all this if the user decided to clear everything
                 if (clearInputsClicked) {
                     return;
                 }
@@ -365,7 +365,7 @@ public class MainCalcActivity extends AppCompatActivity {
 
                 startDate = new StartDate(yearStringValue, month, day);
 
-                if (startDateEditText.getText().length() > 0 && endDateEditText.getText().length() > 0) {
+                if (startDateEditText.getEditableText().length() > 0 && endDateEditText.getEditableText().length() > 0) {
                     calculateButton.setEnabled(true);
                 }
             }
@@ -426,7 +426,7 @@ public class MainCalcActivity extends AppCompatActivity {
 
                 endDate = new EndDate(yearStringValue, month, day);
 
-                if (startDateEditText.getText().length() > 0 && endDateEditText.getText().length() > 0) {
+                if (startDateEditText.getEditableText().length() > 0 && endDateEditText.getEditableText().length() > 0) {
                     calculateButton.setEnabled(true);
                 }
             }
@@ -507,6 +507,21 @@ public class MainCalcActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+
+        clearInputsClicked = false;
+
+        // Make sure the edit text is set to numeric input type
+        amountEditText.setSelection(amountEditText.getText().length());
+        amountEditText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+
+        if (startDateEditText.getEditableText().length() > 0 && endDateEditText.getEditableText().length() > 0) {
+            calculateButton.setEnabled(true);
+        }
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main_calc, menu);
@@ -553,7 +568,7 @@ public class MainCalcActivity extends AppCompatActivity {
             resultEditText.getEditableText().clear();
 
             // Make sure the input box is always number input type
-            amountEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
+            amountEditText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
 
             startDatePicker.setDayOfMonth(-1);
             startDatePicker.setMonthOfYear(-1);
