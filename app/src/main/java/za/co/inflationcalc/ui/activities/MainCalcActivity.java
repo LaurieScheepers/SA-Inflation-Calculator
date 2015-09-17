@@ -154,13 +154,23 @@ public class MainCalcActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_UP) {
                     if (!amountEditText.getText().toString().contains(randSymbol)) {
-                        amountEditText.setRawInputType(InputType.TYPE_CLASS_TEXT);
+                        amountEditText.setInputType(InputType.TYPE_CLASS_TEXT);
                         amountEditText.setText(randSymbol);
                         amountEditText.setSelection(amountEditText.getText().length());
-                        amountEditText.setRawInputType(InputType.TYPE_CLASS_NUMBER);
+                        amountEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
                     }
                 }
                 return false;
+            }
+        });
+
+        amountEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (hasFocus) {
+                    amountEditText.setSelection(amountEditText.getText().length());
+                    amountEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
+                }
             }
         });
 
@@ -537,10 +547,13 @@ public class MainCalcActivity extends AppCompatActivity {
         } else if (item.getItemId() == R.id.action_clear_inputs) {
             clearInputsClicked = true;
 
-            startDateEditText.setText("");
-            endDateEditText.setText("");
-            amountEditText.setText("");
-            resultEditText.setText("");
+            startDateEditText.getEditableText().clear();
+            endDateEditText.getEditableText().clear();
+            amountEditText.getEditableText().clear();
+            resultEditText.getEditableText().clear();
+
+            // Make sure the input box is always number input type
+            amountEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
 
             startDatePicker.setDayOfMonth(-1);
             startDatePicker.setMonthOfYear(-1);
