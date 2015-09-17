@@ -6,14 +6,12 @@ import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.codetroopers.betterpickers.datepicker.DatePickerBuilder;
@@ -121,7 +119,7 @@ public class MainCalcActivity extends AppCompatActivity {
         amountEditText = (EditText) findViewById(R.id.enter_amount_edit_text);
         resultEditText = (EditText) findViewById(R.id.result_edit_text);
 
-        // Initialse date pickers
+        // Initialise date pickers
         startDatePicker = new DatePickerBuilder()
                 .setFragmentManager(getSupportFragmentManager())
                 .setStyleResId(R.style.BetterPickersDialogFragment_Light);
@@ -149,6 +147,8 @@ public class MainCalcActivity extends AppCompatActivity {
             }
         });
 
+
+
         // Used to update the amount object value
         amountEditText.addTextChangedListener(new TextWatcher() {
             @Override
@@ -158,41 +158,60 @@ public class MainCalcActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // Ignore
+
             }
 
             @Override
             public void afterTextChanged(Editable s) {
-                LogUtil.d("After text changed called");
-                String input = s.toString();
+                String convertedAmount = s.toString();
 
                 if (s.length() == 0) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            LogUtil.d("R was deleted, the edit text is now empty");
-                            amountEditText.setText(randSymbol);
-                            amountEditText.setSelection(amountEditText.getText().length());
-                        }
-                    });
+                    amountEditText.setText(randSymbol);
+                    amountEditText.setSelection(amountEditText.getText().length());
                 }
 
                 if (s.length() > 0) {
-                    // If no value is entered, don't bother parsing the edit text input
-                    if (input.equals(randSymbol)) {
+                    // Clear answer if the starting amount changes
+                    if (resultEditText.getText().length() > 0) {
+                        resultEditText.setText("");
+                    }
+
+                    // If no numerical value is entered, don't bother parsing the edit text input
+                    if (convertedAmount.equals(randSymbol)) {
                         amount.setValue(0);
                         return;
                     }
 
+                    int indexOfDecimal = convertedAmount.indexOf(".");
+
+                    // Limit the decimals to only two
+                    if (indexOfDecimal != -1) {
+                        try {
+                            String decimals = convertedAmount.substring(indexOfDecimal + 1);
+
+                            LogUtil.d("Found decimals: " + decimals);
+
+                            if (decimals.length() > 2) {
+                                LogUtil.d("Current input is " + convertedAmount);
+                                convertedAmount = convertedAmount.substring(0, indexOfDecimal + 3);
+
+                                LogUtil.d("After conversion, the current input is " + convertedAmount);
+
+                                amountEditText.setText(convertedAmount);
+                                amountEditText.setSelection(amountEditText.getText().length());
+                            }
+                        } catch (Exception e) {
+                            LogUtil.e("Error in checking the decimals of the amount", e);
+                        }
+                    }
+
                     // Remove the rand symbol before parsing the value
-                    if (input.contains(randSymbol)) {
-                        input = input.replace(randSymbol, "");
+                    if (convertedAmount.contains(randSymbol)) {
+                        convertedAmount = convertedAmount.replace(randSymbol, "");
                     }
 
                     try {
-                        amount.setValue(Double.parseDouble(input));
-
-                        LogUtil.d("Amount is now R" + amount.getValue());
+                        amount.setValue(Double.parseDouble(convertedAmount));
                     } catch (Exception e) {
                         LogUtil.e("Error in parsing the amount", e);
                     }
