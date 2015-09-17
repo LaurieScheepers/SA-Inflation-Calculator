@@ -6,11 +6,15 @@ package za.co.inflationcalc.model;
 public class Amount {
     private double amountValue;
 
-    public Amount(double amountValue) {
-        this.amountValue = amountValue;
+    public Amount(double value) {
+        this.amountValue = value;
     }
 
-    public double getAmountValue() {
+    public double getValue() {
         return amountValue;
+    }
+
+    public void setValue(double value) {
+        this.amountValue = value;
     }
 }

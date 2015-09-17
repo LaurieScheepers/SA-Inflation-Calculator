@@ -4,13 +4,13 @@ package za.co.inflationcalc.model;
  * Created by Laurie on 9/14/2015.
  */
 public class Result {
-    private int resultValue;
+    private double resultValue;
 
-    public Result(int resultValue) {
+    public Result(double resultValue) {
         this.resultValue = resultValue;
     }
 
-    public int getResultValue() {
+    public double getResultValue() {
         return resultValue;
     }
 }

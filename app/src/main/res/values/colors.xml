@@ -2,5 +2,7 @@
 <resources>
     <color name="action_bar_background">#388E3C</color>
 
-        <color name="inflation_calc_heading">#6633B5E5</color>
+    <color name="inflation_calc_heading">#6633B5E5</color>
+
+    <color name="dark_grey">#727272</color>
 </resources>

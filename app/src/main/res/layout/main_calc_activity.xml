@@ -133,8 +133,12 @@
                 android:id="@+id/enter_amount_edit_text"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:layout_gravity="center"
+                android:inputType="numberDecimal"
+                android:textStyle="bold"
+                android:layout_weight="1"
+                android:textSize="18sp"
+                android:editable="true"
                 android:hint="Enter amount (R)"
                 android:layout_marginRight="30dp"
                 android:layout_marginEnd="30dp"/>
@@ -171,7 +175,9 @@
                 android:layout_gravity="center"
                 android:hint="Current value?"
                 android:editable="false"
+                android:textSize="18sp"
                 android:textStyle="bold"
+                android:ems="10"
                 android:layout_marginRight="30dp"
                 android:layout_marginEnd="30dp"/>
 

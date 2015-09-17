@@ -1,4 +1,14 @@
+buildscript {
+    repositories {
+        maven { url 'https://maven.fabric.io/public' }
+    }
+
+    dependencies {
+        classpath 'io.fabric.tools:gradle:1.+'
+    }
+}
 apply plugin: 'com.android.application'
+apply plugin: 'io.fabric'
 
 android {
     compileSdkVersion 23
@@ -24,6 +34,7 @@ repositories {
     maven {
         url 'https://oss.sonatype.org/content/repositories/snapshots/'
     }
+    maven { url 'https://maven.fabric.io/public' }
 }
 
 dependencies {
@@ -34,4 +45,7 @@ dependencies {
     compile 'com.loopj.android:android-async-http:1.4.9-SNAPSHOT'
 
     compile 'com.code-troopers.betterpickers:library:2.0.0'
+    compile('com.crashlytics.sdk.android:crashlytics:2.5.2@aar') {
+        transitive = true;
+    }
 }

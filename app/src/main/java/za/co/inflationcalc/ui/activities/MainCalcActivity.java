@@ -1,25 +1,28 @@
-package za.co.inflationcalc.activities;
+package za.co.inflationcalc.ui.activities;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.codetroopers.betterpickers.datepicker.DatePickerBuilder;
 import com.codetroopers.betterpickers.datepicker.DatePickerDialogFragment;
-import com.codetroopers.betterpickers.numberpicker.NumberPickerBuilder;
-import com.codetroopers.betterpickers.numberpicker.NumberPickerDialogFragment;
+import com.crashlytics.android.Crashlytics;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 
+import io.fabric.sdk.android.Fabric;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -32,16 +35,23 @@ import za.co.inflationcalc.R;
 import za.co.inflationcalc.comms.http.RestClient;
 import za.co.inflationcalc.model.Amount;
 import za.co.inflationcalc.model.EndDate;
+import za.co.inflationcalc.model.Result;
 import za.co.inflationcalc.model.StartDate;
 import za.co.inflationcalc.utils.DateUtil;
 import za.co.inflationcalc.utils.LogUtil;
 import za.co.inflationcalc.utils.MathUtil;
 
+/**
+ * <p>
+ * The main activity. This activity (the only one) controls most of the business logic
+ * contained in the app,
+ * </p>
+ * Created by meyers on 2015-05-07.
+ */
 public class MainCalcActivity extends AppCompatActivity {
 
     public static final int START_DATE_EDIT_REF = 0;
     public static final int END_DATE_EDIT_REF = 1;
-    public static final int AMOUNT_EDIT_REF = 2;
 
     private EditText startDateEditText;
     private EditText endDateEditText;
@@ -51,8 +61,7 @@ public class MainCalcActivity extends AppCompatActivity {
     private DatePickerBuilder startDatePicker;
     private DatePickerBuilder endDatePicker;
 
-    private NumberPickerBuilder amountPicker;
-
+    private Calendar currentCalendarDate;
     private Calendar startCalendarDate;
     private Calendar endCalendarDate;
 
@@ -73,36 +82,46 @@ public class MainCalcActivity extends AppCompatActivity {
     private int startMonth;
     private int startDay;
 
+    private Amount amount;
+    private Result result;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Fabric.with(this, new Crashlytics());
+
+        // Set main layout
         setContentView(R.layout.main_calc_activity);
 
+        // Initialise toolbar
         Toolbar toolbar = (Toolbar) findViewById(R.id.main_calc_toolbar);
-
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayShowTitleEnabled(false);
-        getSupportActionBar().setLogo(R.drawable.sa_round_icon_logo);
 
-        // Get current date and automatically set as the end date
-        endCalendarDate = Calendar.getInstance(TimeZone.getDefault());
+        // Set toolbar logo
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setLogo(R.drawable.sa_round_icon_logo);
+        }
+
+        // Initialise the amount object
+        amount = new Amount(0);
+
+        // Initialise dates
+        currentCalendarDate = Calendar.getInstance(TimeZone.getDefault());
         startCalendarDate = Calendar.getInstance(TimeZone.getDefault());
+        endCalendarDate = Calendar.getInstance(TimeZone.getDefault());
 
-        currentYear = endYear = endCalendarDate.get(Calendar.YEAR);
-        LogUtil.d("END_YEAR: " + endYear);
+        // Get the current date and set is as the default end date
+        currentYear = endYear = currentCalendarDate.get(Calendar.YEAR);
+        currentMonth = endMonth= currentCalendarDate.get(Calendar.MONTH) + 1; // Java Calendar months start at 0 (Jan)
+        currentDay = endDay = currentCalendarDate.get(Calendar.DAY_OF_MONTH);
 
-        currentMonth = endMonth = endCalendarDate.get(Calendar.MONTH) + 1; // Jan starts at 0
-        LogUtil.d("END_MONTH: " + endMonth);
-
-        currentDay = endDay = endCalendarDate.get(Calendar.DAY_OF_MONTH);
-        LogUtil.d("END_DAY: " + endDay);
-
+        // Initialise various edit text boxes
         startDateEditText = (EditText) findViewById(R.id.enter_start_date_edit_text);
         endDateEditText = (EditText) findViewById(R.id.enter_end_date_edit_text);
         amountEditText = (EditText) findViewById(R.id.enter_amount_edit_text);
         resultEditText = (EditText) findViewById(R.id.result_edit_text);
 
+        // Initialse date pickers
         startDatePicker = new DatePickerBuilder()
                 .setFragmentManager(getSupportFragmentManager())
                 .setStyleResId(R.style.BetterPickersDialogFragment_Light);
@@ -111,50 +130,88 @@ public class MainCalcActivity extends AppCompatActivity {
                 .setFragmentManager(getSupportFragmentManager())
                 .setStyleResId(R.style.BetterPickersDialogFragment_Light);
 
-        amountPicker = new NumberPickerBuilder()
-                .setFragmentManager(getSupportFragmentManager())
-                .setReference(AMOUNT_EDIT_REF)
-                .setStyleResId(R.style.BetterPickersDialogFragment_Light);
+        // Define special symbol for SA Rand currency
+        final String randSymbol = "R";
 
+        // Used to insert the rand symbol first time the view is touched
         amountEditText.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_UP) {
-                    amountPicker.show();
-                    return true;
+                    if (!amountEditText.getText().toString().contains(randSymbol)) {
+                        amountEditText.setRawInputType(InputType.TYPE_CLASS_TEXT);
+                        amountEditText.setText(randSymbol);
+                        amountEditText.setSelection(amountEditText.getText().length());
+                        amountEditText.setRawInputType(InputType.TYPE_CLASS_NUMBER);
+                    }
                 }
                 return false;
             }
         });
 
-        amountPicker.addNumberPickerDialogHandler(new NumberPickerDialogFragment.NumberPickerDialogHandler() {
+        // Used to update the amount object value
+        amountEditText.addTextChangedListener(new TextWatcher() {
             @Override
-            public void onDialogNumberSet(int reference, int number, double decimal, boolean isNegative, double fullNumber) {
-                if (reference == AMOUNT_EDIT_REF) {
-                    String numberString = decimal > 0 ? number + "." + decimal : String.valueOf(number);
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // Ignore, nothing needed to do here
+            }
 
-                    if (amountEditText.getText().length() == 0) {
-                        amountEditText.setText("R");
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Ignore
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                LogUtil.d("After text changed called");
+                String input = s.toString();
+
+                if (s.length() == 0) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            LogUtil.d("R was deleted, the edit text is now empty");
+                            amountEditText.setText(randSymbol);
+                            amountEditText.setSelection(amountEditText.getText().length());
+                        }
+                    });
+                }
+
+                if (s.length() > 0) {
+                    // If no value is entered, don't bother parsing the edit text input
+                    if (input.equals(randSymbol)) {
+                        amount.setValue(0);
+                        return;
                     }
 
-                    if (amountEditText.getText().length() > 0 && !amountEditText.getText().toString().contains("R")) {
-                        amountEditText.setText("R");
+                    // Remove the rand symbol before parsing the value
+                    if (input.contains(randSymbol)) {
+                        input = input.replace(randSymbol, "");
                     }
 
-                    amountEditText.append(numberString);
-                    amountEditText.setSelection(amountEditText.getText().length());
+                    try {
+                        amount.setValue(Double.parseDouble(input));
+
+                        LogUtil.d("Amount is now R" + amount.getValue());
+                    } catch (Exception e) {
+                        LogUtil.e("Error in parsing the amount", e);
+                    }
                 }
             }
         });
 
-        String day = DateUtil.convertToPrecedingZero(endDay);
-        String month = DateUtil.convertToPrecedingZero(endMonth);
-        String year = String.valueOf(endYear);
+        // We want 0 to appear before the day or month if it's less than 10 (e.g. 01/01/1960 meaning 1 Jan 1960)
+        final String day = DateUtil.convertToPrecedingZero(endDay);
+        final String month = DateUtil.convertToPrecedingZero(endMonth);
+        final String year = String.valueOf(endYear);
 
+        // Automatically set the end date to be today's date
         endDateEditText.setText(day + "/" + month + "/" + year);
 
+        // Construct the end date object
         endDate = new EndDate(year, month, day);
 
+        // Used to show the start date picker when the view is selected
         startDateEditText.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -163,7 +220,7 @@ public class MainCalcActivity extends AppCompatActivity {
 
                     if (startDay > 0 && startMonth >= 0 && startYear > 0) {
                         startDatePicker.setDayOfMonth(startDay);
-                        startDatePicker.setMonthOfYear(startMonth);
+                        startDatePicker.setMonthOfYear(startMonth - 1); // Java Calendar months start at 0 (Jan)
                         startDatePicker.setYear(startYear);
                     }
 
@@ -174,6 +231,7 @@ public class MainCalcActivity extends AppCompatActivity {
             }
         });
 
+        // Used to show the end date picker when the view is selected
         endDateEditText.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -182,7 +240,7 @@ public class MainCalcActivity extends AppCompatActivity {
 
                     if (endDay > 0 && endMonth > 0 && endYear > 0) {
                         endDatePicker.setDayOfMonth(endDay);
-                        endDatePicker.setMonthOfYear(endMonth - 1);
+                        endDatePicker.setMonthOfYear(endMonth - 1); // Java Calendar months start at 0
                         endDatePicker.setYear(endYear);
                     }
 
@@ -193,6 +251,7 @@ public class MainCalcActivity extends AppCompatActivity {
             }
         });
 
+        // Handle the selection of the start date
         startDatePicker.addDatePickerDialogHandler(new DatePickerDialogFragment.DatePickerDialogHandler() {
             @Override
             public void onDialogDateSet(int reference, int year, int monthOfYear, int dayOfMonth) {
@@ -214,11 +273,16 @@ public class MainCalcActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(MainCalcActivity.this, "Start date obviously can't be after the future date." +
-                                        "\n\nCmon man, get yourself together :)", Toast.LENGTH_LONG).show();
-                                startDatePicker.setYear(0);
-                                startDatePicker.setMonthOfYear(0);
-                                startDatePicker.setDayOfMonth(0);
+                                Toast.makeText(MainCalcActivity.this, "The start date obviously can't be after the future date :)", Toast.LENGTH_LONG).show();
+                            }
+                        });
+
+                        return;
+                    } else if (startYear < 1960) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainCalcActivity.this, "Sorry, we only support dates starting from 1960 :(", Toast.LENGTH_LONG).show();
                             }
                         });
 
@@ -226,6 +290,7 @@ public class MainCalcActivity extends AppCompatActivity {
                     }
                 }
 
+                // We want a preceding zero in the date ot month if it is less than 10
                 String day = DateUtil.convertToPrecedingZero(dayOfMonth);
                 String month = DateUtil.convertToPrecedingZero(realStartMonthOfYear);
                 String yearStringValue = String.valueOf(year);
@@ -240,11 +305,14 @@ public class MainCalcActivity extends AppCompatActivity {
             }
         });
 
+        // Handle the selection of the start date
         endDatePicker.addDatePickerDialogHandler(new DatePickerDialogFragment.DatePickerDialogHandler() {
             @Override
             public void onDialogDateSet(int reference, int year, int monthOfYear, int dayOfMonth) {
-                int realEndMonthOfYear = monthOfYear + 1;
-                LogUtil.d("END_DATE: Reference= " + (reference == END_DATE_EDIT_REF ? "END_DATE_PICKER" : "") + ", year = " + year + ", month = " + realEndMonthOfYear + ", day = " + dayOfMonth);
+                int realEndMonthOfYear = monthOfYear + 1; // Jan starts at 0
+
+                LogUtil.d("END_DATE: Reference= " + (reference == END_DATE_EDIT_REF ?
+                        "END_DATE_PICKER" : "") + ", year = " + year + ", month = " + realEndMonthOfYear + ", day = " + dayOfMonth);
 
                 endYear = year;
                 endMonth = realEndMonthOfYear;
@@ -255,12 +323,25 @@ public class MainCalcActivity extends AppCompatActivity {
                 endCalendarDate.set(Calendar.DAY_OF_MONTH, dayOfMonth);
 
                 if (startDateEditText.getText().length() > 0) {
-                    if (startCalendarDate != null && endCalendarDate.getTimeInMillis() < startCalendarDate.getTimeInMillis()) {
+                    if (endCalendarDate.getTimeInMillis() < startCalendarDate.getTimeInMillis()) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(MainCalcActivity.this, "Let's not go back into the past. You'll get the reverse answer anyway" +
-                                        "\n\nNow you're just being difficult :)", Toast.LENGTH_LONG).show();
+                                Toast.makeText(MainCalcActivity.this, "Let's not go back into the past please :)", Toast.LENGTH_LONG).show();
+                                endDatePicker.setYear(currentYear);
+                                endDatePicker.setMonthOfYear(currentMonth);
+                                endDatePicker.setDayOfMonth(currentDay);
+                            }
+                        });
+
+                        return;
+                    } else if (endCalendarDate.getTimeInMillis() > currentCalendarDate.getTimeInMillis()) {
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainCalcActivity.this, "Whoa there, you're reaching too far." +
+                                        "\n\nThis is the future that we are talking about here and we can't make predictions at the moment", Toast.LENGTH_LONG).show();
                                 endDatePicker.setYear(currentYear);
                                 endDatePicker.setMonthOfYear(currentMonth);
                                 endDatePicker.setDayOfMonth(currentDay);
@@ -285,47 +366,51 @@ public class MainCalcActivity extends AppCompatActivity {
             }
         });
 
+        // Initialise the calculate button
         calculateButton = (Button) findViewById(R.id.calculate_btn);
         calculateButton.setEnabled(false);
 
+        // Handle the clicking of the calculate button
         calculateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (amountEditText.getText().length() == 0) {
+                if (amountEditText.getText().length() == 0 || amount.getValue() <= 0) {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(MainCalcActivity.this, "Please enter an amount to make the calculation :)", Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainCalcActivity.this, "Please enter an amount in order to make the calculation", Toast.LENGTH_LONG).show();
                         }
                     });
 
                 } else {
-                    String realValue = amountEditText.getText().toString().contains("R") ?
-                            amountEditText.getText().toString().replace("R", "") : amountEditText.getText().toString();
+                    String realValue = amountEditText.getText().toString().contains(randSymbol) ?
+                            amountEditText.getText().toString().replace(randSymbol, "") : amountEditText.getText().toString();
 
-                    Amount amountObj = new Amount(Double.parseDouble(realValue));
+                    amount.setValue(Double.parseDouble(realValue));
 
                     if (startDate != null && endDate != null) {
                         RequestParams params = new RequestParams();
                         params.put("date1", startDate.getApiRepresentation());
                         params.put("date2", endDate.getApiRepresentation());
-                        params.put("amount", amountObj.getAmountValue());
+                        params.put("amount", amount.getValue());
 
                         LogUtil.d("Input params:" + params.toString());
 
+                        // Do the GET result API call
                         RestClient.get(MainCalcActivity.this, RestClient.BASE_URL, params, new JsonHttpResponseHandler() {
                             @Override
                             public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
                                 try {
-                                    LogUtil.d("Yay, it worked!!!");
                                     LogUtil.d("Result: " + response.toString());
 
                                     double answer = MathUtil.round(response.optDouble("Answer"), 2);
 
-                                    resultEditText.setText("R" + String.valueOf(answer));
+                                    result = new Result(answer);
+
+                                    resultEditText.setText("R" + String.valueOf(result.getResultValue()));
 
                                 } catch (Exception e) {
-                                    LogUtil.e("Error in creating video thumbnail view", e);
+                                    LogUtil.e("Error in parsing the Inflationcalc response", e);
                                 }
                             }
 
