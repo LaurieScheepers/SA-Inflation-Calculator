@@ -5,12 +5,13 @@
     <string name="action_about">About</string>
     <string name="action_clear">Clear inputs</string>
     <string name="inflation_calc_title">Inflation Adjustment Calculator</string>
+    <string name="inflation_calc_description">What goes up, must go up some more</string>
     <string name="start_date">Start Date</string>
     <string name="end_date">End Date</string>
     <string name="amount">Amount</string>
     <string name="result_answer">Result</string>
     <string name="reverse_result_answer">Reverse result: $s</string>
     <string name="about_heading">About this app</string>
-    <string name="about_message">Data retrieved from http://inflationcalc.co.za, created by Renier Crause\n\nAll calculations are based on the official inflation index data available at www.statssa.gov.za/</string>
+    <string name="about_message">Calculate what historical, inflation adjusted money is worth today. The months from January 1960 to present are supported.\n\nData retrieved from http://inflationcalc.co.za, created by Renier Crause\n\nAll calculations are based on the official inflation index data available at www.statssa.gov.za/</string>
 
 </resources>

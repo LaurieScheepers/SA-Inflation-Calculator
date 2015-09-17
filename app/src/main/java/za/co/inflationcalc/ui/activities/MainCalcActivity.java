@@ -1,8 +1,9 @@
 package za.co.inflationcalc.ui.activities;
 
-import android.content.Context;
 import android.content.DialogInterface;
+import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -17,7 +18,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -29,15 +29,15 @@ import com.crashlytics.android.Crashlytics;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 
-import io.fabric.sdk.android.Fabric;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.parceler.Parcels;
 
 import java.util.Calendar;
 import java.util.TimeZone;
 
 import cz.msebera.android.httpclient.Header;
-
+import io.fabric.sdk.android.Fabric;
 import za.co.inflationcalc.R;
 import za.co.inflationcalc.comms.http.RestClient;
 import za.co.inflationcalc.model.Amount;
@@ -45,6 +45,7 @@ import za.co.inflationcalc.model.EndDate;
 import za.co.inflationcalc.model.Result;
 import za.co.inflationcalc.model.StartDate;
 import za.co.inflationcalc.utils.DateUtil;
+import za.co.inflationcalc.utils.KeyboardUtil;
 import za.co.inflationcalc.utils.LogUtil;
 import za.co.inflationcalc.utils.MathUtil;
 import za.co.inflationcalc.utils.StringUtil;
@@ -58,28 +59,46 @@ import za.co.inflationcalc.utils.StringUtil;
  */
 public class MainCalcActivity extends AppCompatActivity {
 
+    // Identifiers for the date pickers
     public static final int START_DATE_EDIT_REF = 0;
     public static final int END_DATE_EDIT_REF = 1;
 
+    // Identifiers for the parcelable objects
+    public static final String EXTRA_SHOULD_RESTORE_STATE_FLAG = "should_restore_state_flag";
+    public static final String EXTRA_START_DATE = "extra_start_date";
+    public static final String EXTRA_END_DATE = "extra_end_date";
+    public static final String EXTRA_AMOUNT = "extra_amount";
+    public static final String EXTRA_RESULT = "extra_result";
+
+    // Define special symbol for SA Rand currency
+    public static final String RAND_SYMBOL = "R";
+
+    // Edit text input fields
     private EditText startDateEditText;
     private EditText endDateEditText;
     private EditText amountEditText;
     private EditText resultEditText;
 
+    // Date picker
     private DatePickerBuilder startDatePicker;
     private DatePickerBuilder endDatePicker;
 
+    // Calendars representing the different dates we want
     private Calendar currentCalendarDate;
     private Calendar startCalendarDate;
     private Calendar endCalendarDate;
 
+    // A textview containing the "reverse answer"
     private TextView reverseResultTv;
 
+    // The button to press to do the calculation
     private Button calculateButton;
 
+    // Date objects
     private StartDate startDate;
     private EndDate endDate;
 
+    // TODO clean up later. Not necessary for so many member variables
     private int currentYear;
     private int currentMonth;
     private int currentDay;
@@ -92,10 +111,18 @@ public class MainCalcActivity extends AppCompatActivity {
     private int startMonth;
     private int startDay;
 
+    // Objects indicating the amount that was entered and also the result obtained after
+    // the inflated value was calculated
     private Amount amount;
     private Result result;
 
+    // Flag indicating that state is being restored after the activity is re-created
+    private boolean stateIsBeingRestored;
+
+    // Flag indicating that the users cleared all inputs
     private boolean clearInputsClicked;
+
+    private View rootView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,6 +131,14 @@ public class MainCalcActivity extends AppCompatActivity {
 
         // Set main layout
         setContentView(R.layout.main_calc_activity);
+
+        // Keep reference to the root layout
+        rootView = getWindow().getDecorView().findViewById(android.R.id.content);
+
+        // If that didn't work, try this
+        if (rootView == null) {
+            rootView = getWindow().getDecorView().findViewById(android.R.id.content).getRootView();
+        }
 
         // Initialise toolbar
         Toolbar toolbar = (Toolbar) findViewById(R.id.main_calc_toolbar);
@@ -114,8 +149,34 @@ public class MainCalcActivity extends AppCompatActivity {
             getSupportActionBar().setLogo(R.drawable.sa_round_icon_logo);
         }
 
-        // Initialise the amount object
-        amount = new Amount(0);
+        if (savedInstanceState != null) {
+            stateIsBeingRestored = savedInstanceState.getBoolean(EXTRA_SHOULD_RESTORE_STATE_FLAG);
+
+            startDate = Parcels.unwrap(savedInstanceState.getParcelable(EXTRA_START_DATE));
+            endDate = Parcels.unwrap(savedInstanceState.getParcelable(EXTRA_END_DATE));
+            amount = Parcels.unwrap(savedInstanceState.getParcelable(EXTRA_AMOUNT));
+
+            LogUtil.d("Deserializing Result Object");
+
+            result = Parcels.unwrap(savedInstanceState.getParcelable(EXTRA_RESULT));
+
+            if (result != null) {
+                LogUtil.d("Result current value is: " + result.getCurrentValue());
+                LogUtil.d("Result reverse value is: " + result.getReverseValue());
+            }
+
+            if (startDate != null) {
+                startDay = Integer.parseInt(startDate.getDay());
+                startMonth = Integer.parseInt(startDate.getMonth());
+                startYear = Integer.parseInt(startDate.getYear());
+            }
+
+            if (endDate != null) {
+                endDay = Integer.parseInt(endDate.getDay());
+                endMonth = Integer.parseInt(endDate.getMonth());
+                endYear = Integer.parseInt(endDate.getYear());
+            }
+        }
 
         // Initialise dates
         currentCalendarDate = Calendar.getInstance(TimeZone.getDefault());
@@ -145,17 +206,45 @@ public class MainCalcActivity extends AppCompatActivity {
         // Initialise "Reverse result" text view
         reverseResultTv = (TextView) findViewById(R.id.reverse_answer);
 
-        // Define special symbol for SA Rand currency
-        final String randSymbol = "R";
+        // Initialise the amount object
+        if (amount == null) {
+            amount = new Amount(0);
+        } else {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    amountEditText.setText(RAND_SYMBOL + String.valueOf(amount.getValue()));
+                }
+            });
+        }
+
+        if (result != null) {
+            LogUtil.d("Retrieved the result object");
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    LogUtil.d("Setting the result text with value " + result.getCurrentValue());
+                    resultEditText.setText(RAND_SYMBOL + String.valueOf(result.getCurrentValue()));
+
+                    LogUtil.d("Setting the reverse result text with value " + result.getReverseValue());
+
+                    reverseResultTv.setText(StringUtil.format(getString(R.string.reverse_result_answer),
+                            RAND_SYMBOL + String.valueOf(result.getReverseValue())));
+
+                    reverseResultTv.setVisibility(View.VISIBLE);
+                }
+            });
+        }
 
         // Used to insert the rand symbol first time the view is touched
         amountEditText.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_UP) {
-                    if (!amountEditText.getText().toString().contains(randSymbol)) {
+                    if (!amountEditText.getText().toString().contains(RAND_SYMBOL)) {
                         amountEditText.setInputType(InputType.TYPE_CLASS_TEXT);
-                        amountEditText.setText(randSymbol);
+                        amountEditText.setText(RAND_SYMBOL);
                         amountEditText.setSelection(amountEditText.getText().length());
                         amountEditText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
                     }
@@ -180,8 +269,7 @@ public class MainCalcActivity extends AppCompatActivity {
                 // Hide keyboard if user presses enter
                 if (event != null && event.getAction() == KeyEvent.ACTION_DOWN &&  (event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
 
-                    InputMethodManager inputMethodManager = (InputMethodManager) getBaseContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    inputMethodManager.hideSoftInputFromWindow(amountEditText.getWindowToken(), 0);
+                    KeyboardUtil.hideKeyboard(getApplicationContext(), amountEditText);
                     return true;
                 }
 
@@ -212,19 +300,20 @@ public class MainCalcActivity extends AppCompatActivity {
                 String convertedAmount = s.toString();
 
                 if (s.length() == 0) {
-                    amountEditText.setText(randSymbol);
+                    amountEditText.setText(RAND_SYMBOL);
                     amountEditText.setSelection(amountEditText.getText().length());
                 }
 
                 if (s.length() > 0) {
-                    // Clear answers if the starting amount changes
-                    if (resultEditText.getText().length() > 0) {
+                    // Clear answers if the starting amount changes (only to be done if the activity is not re-created
+                    if (resultEditText.getText().length() > 0 && !stateIsBeingRestored) {
+                        LogUtil.d("The amount changed: clear the answer views");
                         resultEditText.setText("");
                         reverseResultTv.setVisibility(View.GONE);
                     }
 
                     // If no numerical value is entered, don't bother parsing the edit text input
-                    if (convertedAmount.equals(randSymbol)) {
+                    if (convertedAmount.equals(RAND_SYMBOL)) {
                         amount.setValue(0);
                         return;
                     }
@@ -253,8 +342,8 @@ public class MainCalcActivity extends AppCompatActivity {
                     }
 
                     // Remove the rand symbol before parsing the value
-                    if (convertedAmount.contains(randSymbol)) {
-                        convertedAmount = convertedAmount.replace(randSymbol, "");
+                    if (convertedAmount.contains(RAND_SYMBOL)) {
+                        convertedAmount = convertedAmount.replace(RAND_SYMBOL, "");
                     }
 
                     try {
@@ -263,6 +352,8 @@ public class MainCalcActivity extends AppCompatActivity {
                         LogUtil.e("Error in parsing the amount", e);
                     }
                 }
+
+                stateIsBeingRestored = false;
             }
         });
 
@@ -449,10 +540,18 @@ public class MainCalcActivity extends AppCompatActivity {
                     });
 
                 } else {
-                    String realValue = amountEditText.getText().toString().contains(randSymbol) ?
-                            amountEditText.getText().toString().replace(randSymbol, "") : amountEditText.getText().toString();
+                    String realValue = amountEditText.getText().toString().contains(RAND_SYMBOL) ?
+                            amountEditText.getText().toString().replace(RAND_SYMBOL, "") : amountEditText.getText().toString();
 
                     amount.setValue(Double.parseDouble(realValue));
+
+                    if (startDate == null) {
+                        throw new IllegalArgumentException("Start Date can't be null");
+                    }
+
+                    if (startDate == null) {
+                        throw new IllegalArgumentException("End Date can't be null");
+                    }
 
                     if (startDate != null && endDate != null) {
                         RequestParams params = new RequestParams();
@@ -474,11 +573,16 @@ public class MainCalcActivity extends AppCompatActivity {
 
                                     result = new Result(answer, reverseAnswer);
 
-                                    resultEditText.setText("R" + String.valueOf(result.getCurrentValue()));
+                                    resultEditText.setText(RAND_SYMBOL + String.valueOf(result.getCurrentValue()));
 
                                     reverseResultTv.setText(StringUtil.format(getString(R.string.reverse_result_answer),
                                             "R" + String.valueOf(result.getReverseValue())));
                                     reverseResultTv.setVisibility(View.VISIBLE);
+
+                                    // Remove focus from the "amount" field to the root view
+                                    if (rootView != null) {
+                                        rootView.requestFocus();
+                                    }
 
                                 } catch (Exception e) {
                                     LogUtil.e("Error in parsing the Inflationcalc response", e);
@@ -500,6 +604,8 @@ public class MainCalcActivity extends AppCompatActivity {
                                 LogUtil.e("Inflationcalc Request failed. Status code = " + statusCode, throwable);
                             }
                         });
+                    } else {
+                        Toast.makeText(getApplicationContext(), "Error in calculating the result, check if all the fields are filled in", Toast.LENGTH_LONG).show();
                     }
                 }
             }
@@ -519,6 +625,59 @@ public class MainCalcActivity extends AppCompatActivity {
         if (startDateEditText.getEditableText().length() > 0 && endDateEditText.getEditableText().length() > 0) {
             calculateButton.setEnabled(true);
         }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+
+        // Parcels
+        final Parcelable wrappedStartDate;
+        final Parcelable wrappedEndDate;
+        final Parcelable wrappedAmount;
+        final Parcelable wrappedResult;
+
+        savedInstanceState.putBoolean(EXTRA_SHOULD_RESTORE_STATE_FLAG, true);
+
+        if (startDate != null) {
+            wrappedStartDate = Parcels.wrap(startDate);
+            savedInstanceState.putParcelable(EXTRA_START_DATE, wrappedStartDate);
+        }
+
+        if (endDate != null) {
+            wrappedEndDate = Parcels.wrap(endDate);
+            savedInstanceState.putParcelable(EXTRA_END_DATE, wrappedEndDate);
+        }
+
+        if (amount != null) {
+            wrappedAmount = Parcels.wrap(amount);
+            savedInstanceState.putParcelable(EXTRA_AMOUNT, wrappedAmount);
+        }
+
+        if (result != null) {
+            LogUtil.d("Serializing Result Object");
+            wrappedResult = Parcels.wrap(result);
+            savedInstanceState.putParcelable(EXTRA_RESULT, wrappedResult);
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        if (rootView != null) {
+            LogUtil.d("Resetting focus to the root layout");
+            rootView.requestFocus();
+        }
+
+        // also hide the keyboard whenever screen orientation changes
+
+        KeyboardUtil.hideKeyboard(getApplicationContext(), amountEditText);
     }
 
     @Override
@@ -548,7 +707,7 @@ public class MainCalcActivity extends AppCompatActivity {
             try {
                 // Try and Linkify the message
                 final SpannableString spannableMessage = new SpannableString(msg);
-                Linkify.addLinks(spannableMessage, Linkify.ALL);
+                Linkify.addLinks(spannableMessage, Linkify.WEB_URLS);
 
                 aboutDialog.setMessage(spannableMessage);
                 aboutDialog.show();

@@ -1,10 +1,17 @@
 package za.co.inflationcalc.model;
 
+import org.parceler.Parcel;
+
 /**
  * Created by Laurie on 9/14/2015.
  */
+@Parcel
 public class Amount {
     private double amountValue;
+
+    public Amount() {
+        // Default empty constructor required by Parceler
+    }
 
     public Amount(double value) {
         this.amountValue = value;

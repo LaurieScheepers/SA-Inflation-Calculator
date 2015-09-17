@@ -4,5 +4,7 @@
 
     <color name="inflation_calc_heading">#6633B5E5</color>
 
+    <color name="button_focused_color">#127fbf</color>
+
     <color name="dark_grey">#727272</color>
 </resources>
