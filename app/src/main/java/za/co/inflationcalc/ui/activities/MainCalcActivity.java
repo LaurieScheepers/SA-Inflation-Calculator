@@ -59,6 +59,8 @@ import za.co.inflationcalc.utils.StringUtil;
  */
 public class MainCalcActivity extends AppCompatActivity {
 
+    public static boolean DEBUG = false;
+
     // Identifiers for the date pickers
     public static final int START_DATE_EDIT_REF = 0;
     public static final int END_DATE_EDIT_REF = 1;
