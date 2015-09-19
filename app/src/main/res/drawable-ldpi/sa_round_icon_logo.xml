@@ -3,6 +3,6 @@
     xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <item
-        android:drawable="@mipmap/sa_round_icon"
+        android:drawable="@mipmap/launcher_icon_final"
         android:right="10dp"/>
 </layer-list>

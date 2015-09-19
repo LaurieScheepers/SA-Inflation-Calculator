@@ -12,6 +12,6 @@
     <string name="result_answer">Result</string>
     <string name="reverse_result_answer">Reverse result: $s</string>
     <string name="about_heading">About this app</string>
-    <string name="about_message">Calculate what historical, inflation adjusted money is worth today. The months from January 1960 to present are supported.\n\nData retrieved from http://inflationcalc.co.za, created by Renier Crause\n\nAll calculations are based on the official inflation index data available at www.statssa.gov.za/</string>
+    <string name="about_message">Calculate what historical, inflation adjusted money is worth today. The months from January 1960 to present are supported.\n\nData retrieved from http://inflationcalc.co.za, created by Renier Crause\n\nAll calculations are based on the official inflation index data available at www.statssa.gov.za/\n\n Modified images used are compliant with the <b>CC BY-NC-ND 2.0</b> license (https://creativecommons.org/licenses/by-nc-nd/2.0/)</string>
 
 </resources>
