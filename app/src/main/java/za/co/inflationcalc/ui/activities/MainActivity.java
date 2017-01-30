@@ -73,7 +73,7 @@ import za.co.inflationcalc.utils.callback.FadeInAnimationCompletedCallback;
  */
 public class MainActivity extends AppCompatActivity {
 
-    public static boolean DEBUG = true;
+    public static boolean DEBUG = false;
 
     // Identifiers for the date pickers
     public static final int START_DATE_EDIT_REF = 0;
