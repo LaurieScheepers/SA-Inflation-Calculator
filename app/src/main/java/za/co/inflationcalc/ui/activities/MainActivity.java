@@ -21,7 +21,6 @@ import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -191,11 +190,6 @@ public class MainActivity extends AppCompatActivity {
         startCalendarDate = Calendar.getInstance(TimeZone.getDefault());
         endCalendarDate = Calendar.getInstance(TimeZone.getDefault());
 
-        // Get the current date and set is as the default end date
-        currentYear = endYear = currentCalendarDate.get(Calendar.YEAR);
-        currentMonth = endMonth= currentCalendarDate.get(Calendar.MONTH) + 1; // Java Calendar months start at 0 (Jan)
-        currentDay = endDay = currentCalendarDate.get(Calendar.DAY_OF_MONTH);
-
         // Initialise various edit text boxes
         startDateEditText = (EditText) findViewById(R.id.enter_start_date_edit_text);
         endDateEditText = (EditText) findViewById(R.id.enter_end_date_edit_text);
@@ -210,6 +204,8 @@ public class MainActivity extends AppCompatActivity {
         endDatePicker = new DatePickerBuilder()
                 .setFragmentManager(getSupportFragmentManager())
                 .setStyleResId(R.style.BetterPickersDialogFragment_Light);
+
+        initialiseEndYearInput();
 
         // Initialise "Reverse result" text view
         reverseResultTv = (TextView) findViewById(R.id.reverse_answer);
@@ -389,17 +385,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // We want 0 to appear before the day or month if it's less than 10 (e.g. 01/01/1960 meaning 1 Jan 1960)
-        final String day = DateUtil.convertToPrecedingZero(endDay);
-        final String month = DateUtil.convertToPrecedingZero(endMonth);
-        final String year = String.valueOf(endYear);
-
-        // Automatically set the end date to be today's date
-        endDateEditText.setText(day + "/" + month + "/" + year);
-
-        // Construct the end date object
-        endDate = new EndDate(year, month, day);
-
         // Used to show the start date picker when the view is selected
         startDateEditText.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -462,7 +447,9 @@ public class MainActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(MainActivity.this, "The start date obviously can't be after the future date :)", Toast.LENGTH_LONG).show();
+                                Toast.makeText(MainActivity.this, "The start date can't be after the future date :)", Toast.LENGTH_LONG).show();
+
+                                clearStartingYearInput();
                             }
                         });
 
@@ -472,6 +459,8 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 Toast.makeText(MainActivity.this, "Sorry, we only support dates starting from 1960 :(", Toast.LENGTH_LONG).show();
+
+                                clearStartingYearInput();
                             }
                         });
 
@@ -511,6 +500,21 @@ public class MainActivity extends AppCompatActivity {
                 endCalendarDate.set(Calendar.MONTH, monthOfYear);
                 endCalendarDate.set(Calendar.DAY_OF_MONTH, dayOfMonth);
 
+                // Can't select a date before 1960
+                if (endYear < 1960) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this, "Sorry, we only support dates starting from 1960 :(", Toast.LENGTH_LONG).show();
+
+                            initialiseEndYearInput();
+                        }
+                    });
+
+                    return;
+                }
+
+                // Now check for error conditions if the start date has been set
                 if (startDateEditText.getText().length() > 0) {
                     if (endCalendarDate.getTimeInMillis() < startCalendarDate.getTimeInMillis()) {
                         runOnUiThread(new Runnable() {
@@ -753,61 +757,92 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_about) {
-
-            final String msg = getString(R.string.about_message);
-
-            final AlertDialog aboutDialog = new AlertDialog.Builder(this)
-                    .setTitle(getString(R.string.about_heading))
-                    .setCancelable(true)
-                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    })
-                    .setIcon(android.R.drawable.ic_dialog_info)
-                    .create();
-
-            try {
-                // Try and Linkify the message
-                final SpannableString spannableMessage = new SpannableString(msg);
-                Linkify.addLinks(spannableMessage, Linkify.WEB_URLS);
-
-                aboutDialog.setMessage(spannableMessage);
-                aboutDialog.show();
-
-                // Make the links clickable
-                TextView message = ((TextView) aboutDialog.findViewById(android.R.id.message));
-
-                if (message != null) {
-                    message.setMovementMethod(LinkMovementMethod.getInstance());
-                }
-            } catch (Exception e) {
-                aboutDialog.setMessage(msg);
-                aboutDialog.show();
-            }
-        } else if (item.getItemId() == R.id.action_clear_inputs) {
-            clearInputsClicked = true;
-
-            startDateEditText.getEditableText().clear();
-            endDateEditText.getEditableText().clear();
-            amountEditText.getEditableText().clear();
-            resultEditText.getEditableText().clear();
-
-            // Make sure the input box is always number input type
-            amountEditText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-
-            startDatePicker.setDayOfMonth(-1);
-            startDatePicker.setMonthOfYear(-1);
-            startDatePicker.setYear(-1);
-
-            endDatePicker.setDayOfMonth(-1);
-            endDatePicker.setMonthOfYear(-1);
-            endDatePicker.setYear(-1);
-
-            reverseResultTv.setVisibility(View.GONE);
-
-            clearInputsClicked = false;
+            showAboutDialog();
+        } else if (item.getItemId() == R.id.action_reset) {
+            clearUserInputs();
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void showAboutDialog() {
+        final String msg = getString(R.string.about_message);
+
+        final AlertDialog aboutDialog = new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.about_heading))
+                .setCancelable(true)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_info)
+                .create();
+
+        try {
+            // Try and Linkify the message
+            final SpannableString spannableMessage = new SpannableString(msg);
+            Linkify.addLinks(spannableMessage, Linkify.WEB_URLS);
+
+            aboutDialog.setMessage(spannableMessage);
+            aboutDialog.show();
+
+            // Make the links clickable
+            TextView message = ((TextView) aboutDialog.findViewById(android.R.id.message));
+
+            if (message != null) {
+                message.setMovementMethod(LinkMovementMethod.getInstance());
+            }
+        } catch (Exception e) {
+            aboutDialog.setMessage(msg);
+            aboutDialog.show();
+        }
+    }
+
+    private void clearUserInputs() {
+        clearInputsClicked = true;
+
+        amountEditText.getEditableText().clear();
+        resultEditText.getEditableText().clear();
+
+        // Make sure the input box is always number input type
+        amountEditText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+
+        // Clear the starting year. NOTE we don't clear the end year here - that is defaulted to the current date
+        clearStartingYearInput();
+        initialiseEndYearInput();
+
+        reverseResultTv.setVisibility(View.GONE);
+
+        clearInputsClicked = false;
+    }
+
+    private void clearStartingYearInput() {
+        startDateEditText.getEditableText().clear();
+
+        startDay = 0;
+        startMonth = 0;
+        startYear = 0;
+
+        startDatePicker.setDayOfMonth(-1);
+        startDatePicker.setMonthOfYear(-1);
+        startDatePicker.setYear(-1);
+    }
+
+    private void initialiseEndYearInput() {
+        // Get the current date and set is as the default end date
+        currentYear = endYear = currentCalendarDate.get(Calendar.YEAR);
+        currentMonth = endMonth= currentCalendarDate.get(Calendar.MONTH) + 1; // Java Calendar months start at 0 (Jan)
+        currentDay = endDay = currentCalendarDate.get(Calendar.DAY_OF_MONTH);
+
+        // We want 0 to appear before the day or month if it's less than 10 (e.g. 01/01/1960 meaning 1 Jan 1960)
+        final String day = DateUtil.convertToPrecedingZero(endDay);
+        final String month = DateUtil.convertToPrecedingZero(endMonth);
+        final String year = String.valueOf(endYear);
+
+        // Automatically set the end date to be today's date
+        endDateEditText.setText(day + "/" + month + "/" + year);
+
+        // Construct the end date object
+        endDate = new EndDate(year, month, day);
     }
 }

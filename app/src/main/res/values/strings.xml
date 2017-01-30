@@ -3,7 +3,7 @@
 
     <string name="hello_world">Hello world!</string>
     <string name="action_about">About</string>
-    <string name="action_clear">Clear inputs</string>
+    <string name="action_reset">Reset</string>
     <string name="inflation_calc_title">Inflation Adjustment Calculator</string>
     <string name="inflation_calc_description">What goes up, must go up some more</string>
     <string name="start_date">Start Date</string>

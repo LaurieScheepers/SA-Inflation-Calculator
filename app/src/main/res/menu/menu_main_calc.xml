@@ -4,10 +4,10 @@
     tools:context="com.notify.">
 
     <item
-        android:id="@+id/action_clear_inputs"
+        android:id="@+id/action_reset"
         android:icon="@drawable/ic_action_content_clear"
         app:showAsAction="never"
-        android:title="@string/action_clear" />
+        android:title="@string/action_reset" />
 
     <item
         android:id="@+id/action_about"
