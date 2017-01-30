@@ -5,6 +5,7 @@ import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -25,7 +26,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.codetroopers.betterpickers.datepicker.DatePickerBuilder;
 import com.codetroopers.betterpickers.datepicker.DatePickerDialogFragment;
@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
         Fabric.with(this, new Crashlytics());
 
         // Set main layout
-        setContentView(R.layout.main_calc_activity);
+        setContentView(R.layout.main_activity);
 
         // Keep reference to the root layout
         rootView = getWindow().getDecorView().findViewById(android.R.id.content);
@@ -471,7 +471,15 @@ public class MainActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(MainActivity.this, "The start date can't be after the future date :)", Toast.LENGTH_LONG).show();
+                                final Snackbar snack = Snackbar.make(rootView, R.string.error_start_after_future, Snackbar.LENGTH_INDEFINITE);
+                                snack.setAction(R.string.ok, new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        snack.dismiss();
+                                    }
+                                });
+
+                                snack.show();
 
                                 clearStartingYearInput();
                             }
@@ -482,7 +490,15 @@ public class MainActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(MainActivity.this, "Sorry, we only support dates starting from 1960 :(", Toast.LENGTH_LONG).show();
+                                final Snackbar snack = Snackbar.make(rootView, R.string.error_before_1960, Snackbar.LENGTH_INDEFINITE);
+                                snack.setAction(R.string.ok, new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        snack.dismiss();
+                                    }
+                                });
+
+                                snack.show();
 
                                 clearStartingYearInput();
                             }
@@ -527,7 +543,41 @@ public class MainActivity extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(MainActivity.this, "Sorry, we only support dates starting from 1960 :(", Toast.LENGTH_LONG).show();
+                            final Snackbar snack = Snackbar.make(rootView, R.string.error_before_1960, Snackbar.LENGTH_INDEFINITE);
+                            snack.setAction(R.string.ok, new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
+                                    snack.dismiss();
+                                }
+                            });
+
+                            snack.show();
+
+                            initialiseEndYearInput();
+                        }
+                    });
+
+                    return;
+                }
+
+                if (endCalendarDate.getTimeInMillis() > currentCalendarDate.getTimeInMillis()) {
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            final Snackbar snack = Snackbar.make(rootView, R.string.error_timetravel_future, Snackbar.LENGTH_INDEFINITE);
+                            snack.setAction(R.string.ok, new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
+                                    snack.dismiss();
+                                }
+                            });
+
+                            View snackbarView = snack.getView();
+                            TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+                            textView.setMaxLines(5);  // show multiple line
+
+                            snack.show();
 
                             initialiseEndYearInput();
                         }
@@ -542,24 +592,17 @@ public class MainActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(MainActivity.this, "Let's not go back into the past please :)", Toast.LENGTH_LONG).show();
-                                endDatePicker.setYear(currentYear);
-                                endDatePicker.setMonthOfYear(currentMonth);
-                                endDatePicker.setDayOfMonth(currentDay);
-                            }
-                        });
+                                final Snackbar snack = Snackbar.make(rootView, R.string.error_timetravel_past, Snackbar.LENGTH_INDEFINITE);
+                                snack.setAction(R.string.ok, new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        snack.dismiss();
+                                    }
+                                });
 
-                        return;
-                    } else if (endCalendarDate.getTimeInMillis() > currentCalendarDate.getTimeInMillis()) {
+                                snack.show();
 
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(MainActivity.this, "Whoa there, you're reaching too far." +
-                                        "\n\nThis is the future that we are talking about here and we can't make predictions at the moment", Toast.LENGTH_LONG).show();
-                                endDatePicker.setYear(currentYear);
-                                endDatePicker.setMonthOfYear(currentMonth);
-                                endDatePicker.setDayOfMonth(currentDay);
+                                initialiseEndYearInput();
                             }
                         });
 
@@ -678,7 +721,7 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText(MainActivity.this, "Please enter an amount in order to make the calculation", Toast.LENGTH_LONG).show();
+                    Snackbar.make(rootView, R.string.error_no_amount, Snackbar.LENGTH_SHORT).show();
                 }
             });
 
@@ -767,7 +810,15 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         } else {
-            Toast.makeText(getApplicationContext(), "Error in calculating the result, check if all the fields are filled in", Toast.LENGTH_LONG).show();
+            final Snackbar snack = Snackbar.make(rootView, R.string.error_calculation_result, Snackbar.LENGTH_INDEFINITE);
+            snack.setAction(R.string.ok, new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    snack.dismiss();
+                }
+            });
+
+            snack.show();
         }
     }
 
@@ -891,9 +942,6 @@ public class MainActivity extends AppCompatActivity {
     private void clearUserInputs() {
         clearInputsClicked = true;
 
-        result = null;
-        amount = null;
-
         amountEditText.getEditableText().clear();
         resultEditText.getEditableText().clear();
 
@@ -903,6 +951,8 @@ public class MainActivity extends AppCompatActivity {
         // Clear the starting year. NOTE we don't clear the end year here - that is defaulted to the current date
         clearStartingYearInput();
         initialiseEndYearInput();
+
+        initTextContainers();
 
         if (reverseResultTv.getVisibility() == View.VISIBLE) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {

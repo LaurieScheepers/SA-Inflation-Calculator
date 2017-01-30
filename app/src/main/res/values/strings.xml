@@ -1,7 +1,8 @@
 <resources>
     <string name="app_name">SA Inflation Calculator</string>
 
-    <string name="hello_world">Hello world!</string>
+
+    <string name="ok">OK</string>
     <string name="action_about">About</string>
     <string name="action_reset">Reset</string>
     <string name="inflation_calc_title">Inflation Adjustment Calculator</string>
@@ -17,5 +18,13 @@
     <string name="enter_amount_hint">Enter amount (R)</string>
     <string name="current_value_hint">Current value?</string>
     <string name="calculate_button">Calculate!</string>
+
+    <!-- Error messages -->
+    <string name="error_start_after_future">The start date can\'t be after the future date :)</string>
+    <string name="error_before_1960">Sorry, we only support dates starting from 1960 :(</string>
+    <string name="error_timetravel_past">Let\'s not go back into the past please :)</string>
+    <string name="error_timetravel_future">Whoa there, you\'re reaching too far.\n\nThis is the future that we are talking about here and we can\'t make predictions at the moment</string>
+    <string name="error_no_amount">Please enter an amount in order to make the calculation</string>
+    <string name="error_calculation_result">Error in calculating the result, check if all the fields are filled in</string>
 
 </resources>
