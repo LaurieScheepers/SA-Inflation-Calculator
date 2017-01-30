@@ -2,7 +2,7 @@ package za.co.inflationcalc.utils;
 
 import android.util.Log;
 
-import za.co.inflationcalc.ui.activities.MainCalcActivity;
+import za.co.inflationcalc.ui.activities.MainActivity;
 
 /**
  * Created by Laurie on 9/14/2015.
@@ -17,7 +17,7 @@ public class LogUtil {
     }
 
     public static void d(String msg) {
-        if (MainCalcActivity.DEBUG) {
+        if (MainActivity.DEBUG) {
             Log.d(getTag(), msg);
         }
     }
@@ -27,7 +27,7 @@ public class LogUtil {
     }
 
     public static void e(String msg, Throwable tr) {
-        if (MainCalcActivity.DEBUG) {
+        if (MainActivity.DEBUG) {
             Log.e(getTag(), msg, tr);
         }
     }

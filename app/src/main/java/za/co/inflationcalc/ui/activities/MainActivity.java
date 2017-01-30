@@ -57,7 +57,7 @@ import za.co.inflationcalc.utils.StringUtil;
  * </p>
  * Created by meyers on 2015-05-07.
  */
-public class MainCalcActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity {
 
     public static boolean DEBUG = false;
 
@@ -432,7 +432,7 @@ public class MainCalcActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(MainCalcActivity.this, "The start date obviously can't be after the future date :)", Toast.LENGTH_LONG).show();
+                                Toast.makeText(MainActivity.this, "The start date obviously can't be after the future date :)", Toast.LENGTH_LONG).show();
                             }
                         });
 
@@ -441,7 +441,7 @@ public class MainCalcActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(MainCalcActivity.this, "Sorry, we only support dates starting from 1960 :(", Toast.LENGTH_LONG).show();
+                                Toast.makeText(MainActivity.this, "Sorry, we only support dates starting from 1960 :(", Toast.LENGTH_LONG).show();
                             }
                         });
 
@@ -486,7 +486,7 @@ public class MainCalcActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(MainCalcActivity.this, "Let's not go back into the past please :)", Toast.LENGTH_LONG).show();
+                                Toast.makeText(MainActivity.this, "Let's not go back into the past please :)", Toast.LENGTH_LONG).show();
                                 endDatePicker.setYear(currentYear);
                                 endDatePicker.setMonthOfYear(currentMonth);
                                 endDatePicker.setDayOfMonth(currentDay);
@@ -499,7 +499,7 @@ public class MainCalcActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Toast.makeText(MainCalcActivity.this, "Whoa there, you're reaching too far." +
+                                Toast.makeText(MainActivity.this, "Whoa there, you're reaching too far." +
                                         "\n\nThis is the future that we are talking about here and we can't make predictions at the moment", Toast.LENGTH_LONG).show();
                                 endDatePicker.setYear(currentYear);
                                 endDatePicker.setMonthOfYear(currentMonth);
@@ -537,7 +537,7 @@ public class MainCalcActivity extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(MainCalcActivity.this, "Please enter an amount in order to make the calculation", Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainActivity.this, "Please enter an amount in order to make the calculation", Toast.LENGTH_LONG).show();
                         }
                     });
 
@@ -564,7 +564,7 @@ public class MainCalcActivity extends AppCompatActivity {
                         LogUtil.d("Input params:" + params.toString());
 
                         // Do the GET result API call
-                        RestClient.get(MainCalcActivity.this, RestClient.BASE_URL, params, new JsonHttpResponseHandler() {
+                        RestClient.get(MainActivity.this, RestClient.BASE_URL, params, new JsonHttpResponseHandler() {
                             @Override
                             public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
                                 try {
