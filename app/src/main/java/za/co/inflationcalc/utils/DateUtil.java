@@ -1,19 +1,14 @@
 package za.co.inflationcalc.utils;
 
 /**
+ * Contains some helper methods related to dates
+ * <p/>
  * Created by Laurie on 9/15/2015.
  */
 public class DateUtil {
-    public static final String DAY = "day";
-    public static final String MONTH = "month";
-    public static final String YEAR = "year";
 
-    public static boolean isDateInputLessThan10(int input) {
-        if (input < 10) {
-            return true;
-        }
-
-        return false;
+    private static boolean isDateInputLessThan10(int input) {
+        return input < 10;
     }
 
     public static String convertToPrecedingZero(int input) {

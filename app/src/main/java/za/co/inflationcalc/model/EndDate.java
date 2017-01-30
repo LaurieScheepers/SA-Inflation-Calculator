@@ -5,8 +5,11 @@ import org.parceler.Parcel;
 import za.co.inflationcalc.utils.LogUtil;
 
 /**
+ * POJO describing an end-date object
+ * <p/>
  * Created by Laurie on 9/15/2015.
  */
+@SuppressWarnings("WeakerAccess")
 @Parcel
 public class EndDate extends StartDate {
 

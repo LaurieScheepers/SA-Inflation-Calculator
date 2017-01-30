@@ -48,13 +48,11 @@ import za.co.inflationcalc.utils.DateUtil;
 import za.co.inflationcalc.utils.KeyboardUtil;
 import za.co.inflationcalc.utils.LogUtil;
 import za.co.inflationcalc.utils.MathUtil;
-import za.co.inflationcalc.utils.StringUtil;
 
 /**
- * <p>
  * The main activity. This activity (the only one) controls most of the business logic
  * contained in the app,
- * </p>
+ * <p/>
  * Created by meyers on 2015-05-07.
  */
 public class MainActivity extends AppCompatActivity {
@@ -215,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    amountEditText.setText(RAND_SYMBOL + String.valueOf(amount.getValue()));
+                    amountEditText.setText(String.format(getString(R.string.amount_value), String.valueOf(amount.getValue())));
                 }
             });
         }
@@ -227,12 +225,11 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     LogUtil.d("Setting the result text with value " + result.getCurrentValue());
-                    resultEditText.setText(RAND_SYMBOL + String.valueOf(result.getCurrentValue()));
+                    resultEditText.setText(String.format(getString(R.string.amount_value), String.valueOf(result.getCurrentValue())));
 
                     LogUtil.d("Setting the reverse result text with value " + result.getReverseValue());
 
-                    reverseResultTv.setText(StringUtil.format(getString(R.string.reverse_result_answer),
-                            RAND_SYMBOL + String.valueOf(result.getReverseValue())));
+                    reverseResultTv.setText(String.format(getString(R.string.reverse_result_answer), String.valueOf(result.getReverseValue())));
 
                     reverseResultTv.setVisibility(View.VISIBLE);
                 }
@@ -575,10 +572,11 @@ public class MainActivity extends AppCompatActivity {
 
                                     result = new Result(answer, reverseAnswer);
 
-                                    resultEditText.setText(RAND_SYMBOL + String.valueOf(result.getCurrentValue()));
+                                    resultEditText.setText(String.format(getString(R.string.amount_value), String.valueOf(result.getCurrentValue())));
 
-                                    reverseResultTv.setText(StringUtil.format(getString(R.string.reverse_result_answer),
-                                            "R" + String.valueOf(result.getReverseValue())));
+                                    reverseResultTv.setText(String.format(getString(R.string.reverse_result_answer),
+                                            String.valueOf(result.getReverseValue())));
+
                                     reverseResultTv.setVisibility(View.VISIBLE);
 
                                     // Remove focus from the "amount" field to the root view
@@ -715,7 +713,11 @@ public class MainActivity extends AppCompatActivity {
                 aboutDialog.show();
 
                 // Make the links clickable
-                ((TextView) aboutDialog.findViewById(android.R.id.message)).setMovementMethod(LinkMovementMethod.getInstance());
+                TextView message = ((TextView) aboutDialog.findViewById(android.R.id.message));
+
+                if (message != null) {
+                    message.setMovementMethod(LinkMovementMethod.getInstance());
+                }
             } catch (Exception e) {
                 aboutDialog.setMessage(msg);
                 aboutDialog.show();

@@ -5,20 +5,20 @@
 
     <!-- Text sizes -->
     <dimen name="toolbar_title_text_size">20sp</dimen>
-    <dimen name="heading_text_size">16sp</dimen>
-    <dimen name="edit_text_title_text_size">12sp</dimen>
-    <dimen name="sub_heading_text_size">14sp</dimen>
-    <dimen name="sub_sub_heading_text_size">12sp</dimen>
+    <dimen name="heading_text_size">22sp</dimen>
+    <dimen name="edit_text_title_text_size">18sp</dimen>
+    <dimen name="sub_heading_text_size">18sp</dimen>
+    <dimen name="sub_sub_heading_text_size">14sp</dimen>
 
     <!-- Paddings -->
-    <dimen name="edit_text_container_padding">4dp</dimen>
+    <dimen name="edit_text_container_padding">10dp</dimen>
 
     <!-- Margins -->
-    <dimen name="text_view_heading_top_margin">10dp</dimen>
-    <dimen name="text_view_margin">4dp</dimen>
+    <dimen name="text_view_heading_top_margin">20dp</dimen>
+    <dimen name="text_view_margin">10dp</dimen>
     <dimen name="edit_text_title_margin">30dp</dimen>
     <dimen name="edit_text_margin">30dp</dimen>
-    <dimen name="button_margin">10dp</dimen>
+    <dimen name="button_margin">20dp</dimen>
 
     <!-- Widths -->
     <dimen name="button_width">200dp</dimen>

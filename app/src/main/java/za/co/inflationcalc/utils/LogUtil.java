@@ -5,6 +5,8 @@ import android.util.Log;
 import za.co.inflationcalc.ui.activities.MainActivity;
 
 /**
+ * Contains some helper methods related to logging
+ * <p/>
  * Created by Laurie on 9/14/2015.
  */
 public class LogUtil {

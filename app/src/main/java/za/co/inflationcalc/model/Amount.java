@@ -3,8 +3,12 @@ package za.co.inflationcalc.model;
 import org.parceler.Parcel;
 
 /**
+ * POJO describing an amount object
+ *
+ * <p/>
  * Created by Laurie on 9/14/2015.
  */
+@SuppressWarnings("WeakerAccess")
 @Parcel
 public class Amount {
     private double amountValue;

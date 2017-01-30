@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
+ * Contains some helper methods related to mathematical operations
+ * <p/>
  * Created by Laurie on 9/16/2015.
  */
 public class MathUtil {

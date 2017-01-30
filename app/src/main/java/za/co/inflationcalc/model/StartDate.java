@@ -1,18 +1,21 @@
 package za.co.inflationcalc.model;
 
+import android.text.TextUtils;
+
 import org.parceler.Parcel;
 
-import za.co.inflationcalc.utils.StringUtil;
-
 /**
+ * POJO describing a start-date object
+ * <p/>
  * Created by Laurie on 9/15/2015.
  */
+@SuppressWarnings("WeakerAccess")
 @Parcel
 public class StartDate {
 
-    protected String year;
-    protected String month;
-    protected String day;
+    String year;
+    String month;
+    String day;
 
     private String apiRepresentation;
 
@@ -28,12 +31,12 @@ public class StartDate {
         convertToApiFormat();
     }
 
-    public void convertToApiFormat() {
+    private void convertToApiFormat() {
         apiRepresentation = year + "-" + month + "-" + day;
     }
 
     public String getApiRepresentation() {
-        if (StringUtil.isNullOrEmpty(apiRepresentation)) {
+        if (TextUtils.isEmpty(apiRepresentation)) {
             convertToApiFormat();
         }
 

@@ -7,6 +7,9 @@ import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 
 /**
+ * The REST API client that does the API requests
+ * <p/>
+ *
  * Created by Laurie on 9/14/2015.
  */
 public class RestClient {

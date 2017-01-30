@@ -5,5 +5,5 @@
     android:shape="rectangle">
 
     <corners android:radius="3dp" />
-    <solid android:color="@color/button_focused_color" />
+    <solid android:color="@color/button_focused" />
 </shape>
