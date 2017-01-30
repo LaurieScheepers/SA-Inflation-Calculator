@@ -17,7 +17,7 @@ public class StartDate {
     String month;
     String day;
 
-    private String apiRepresentation;
+    public String apiRepresentation;
 
     public StartDate() {
         // Default empty constructor required by Parceler

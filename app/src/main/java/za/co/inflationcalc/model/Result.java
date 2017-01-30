@@ -11,8 +11,8 @@ import org.parceler.Parcel;
 @Parcel
 public class Result {
 
-    private double currentValue;
-    private double reverseValue;
+    public double currentValue;
+    public double reverseValue;
 
     public Result() {
         // Default empty constructor required by Parceler

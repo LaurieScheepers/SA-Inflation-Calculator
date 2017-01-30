@@ -11,7 +11,7 @@ import org.parceler.Parcel;
 @SuppressWarnings("WeakerAccess")
 @Parcel
 public class Amount {
-    private double amountValue;
+    public double amountValue;
 
     public Amount() {
         // Default empty constructor required by Parceler
