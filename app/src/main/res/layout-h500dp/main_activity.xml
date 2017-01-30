@@ -17,7 +17,7 @@
         <android.support.v7.widget.Toolbar
             android:id="@+id/main_calc_toolbar"
             android:minHeight="?attr/actionBarSize"
-            android:background="@color/action_bar_background"
+            android:background="@color/tool_bar_background"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
