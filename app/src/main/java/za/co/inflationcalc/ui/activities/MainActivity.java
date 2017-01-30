@@ -49,6 +49,7 @@ import java.util.TimeZone;
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.util.TextUtils;
 import io.fabric.sdk.android.Fabric;
+import za.co.inflationcalc.BuildConfig;
 import za.co.inflationcalc.R;
 import za.co.inflationcalc.comms.http.RestClient;
 import za.co.inflationcalc.model.Amount;
@@ -906,7 +907,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showAboutDialog() {
-        final String msg = getString(R.string.about_message);
+        final String msg = String.format(getString(R.string.about_message), BuildConfig.VERSION_NAME);
 
         final AlertDialog aboutDialog = new AlertDialog.Builder(this)
                 .setTitle(getString(R.string.about_heading))
