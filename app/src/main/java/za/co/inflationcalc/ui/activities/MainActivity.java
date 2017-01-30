@@ -85,11 +85,6 @@ public class MainActivity extends AppCompatActivity {
     // Define special symbol for SA Rand currency
     public static final String RAND_SYMBOL = "R";
 
-    private LinearLayout startDateContainer;
-    private LinearLayout endDateContainer;
-    private LinearLayout amountContainer;
-    private LinearLayout resultContainer;
-
     // Edit text input fields
     private EditText startDateEditText;
     private EditText endDateEditText;
@@ -116,10 +111,6 @@ public class MainActivity extends AppCompatActivity {
     private EndDate endDate;
 
     // Date variables (year, month, day)
-    private int currentYear;
-    private int currentMonth;
-    private int currentDay;
-
     private int endYear;
     private int endMonth;
     private int endDay;
@@ -513,7 +504,7 @@ public class MainActivity extends AppCompatActivity {
                 String month = DateUtil.convertToPrecedingZero(realStartMonthOfYear);
                 String yearStringValue = String.valueOf(year);
 
-                startDateEditText.setText(day + "/" + month + "/" + yearStringValue);
+                startDateEditText.setText(yearStringValue + "/" + month + "/" + day);
 
                 startDate = new StartDate(yearStringValue, month, day);
 
@@ -614,7 +605,7 @@ public class MainActivity extends AppCompatActivity {
                 String month = DateUtil.convertToPrecedingZero(realEndMonthOfYear);
                 String yearStringValue = String.valueOf(year);
 
-                endDateEditText.setText(day + "/" + month + "/" + yearStringValue);
+                endDateEditText.setText(yearStringValue + "/" + month + "/" + day);
 
                 endDate = new EndDate(yearStringValue, month, day);
 
@@ -658,10 +649,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initTextContainers() {
-        startDateContainer = (LinearLayout) findViewById(R.id.start_date_container);
-        endDateContainer = (LinearLayout) findViewById(R.id.end_date_container);
-        amountContainer = (LinearLayout) findViewById(R.id.amount_container);
-        resultContainer = (LinearLayout) findViewById(R.id.result_container);
+        final LinearLayout startDateContainer = (LinearLayout) findViewById(R.id.start_date_container);
+        final LinearLayout endDateContainer = (LinearLayout) findViewById(R.id.end_date_container);
+        final LinearLayout amountContainer = (LinearLayout) findViewById(R.id.amount_container);
+        final LinearLayout resultContainer = (LinearLayout) findViewById(R.id.result_container);
 
         // Do cascading fade in of text containers
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
@@ -916,7 +907,6 @@ public class MainActivity extends AppCompatActivity {
                         dialog.dismiss();
                     }
                 })
-                .setIcon(android.R.drawable.ic_dialog_info)
                 .create();
 
         try {
@@ -952,8 +942,6 @@ public class MainActivity extends AppCompatActivity {
         clearStartingYearInput();
         initialiseEndYearInput();
 
-        initTextContainers();
-
         if (reverseResultTv.getVisibility() == View.VISIBLE) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
                 AnimationUtil.fadeViewOut(reverseResultTv);
@@ -962,7 +950,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        animateCalculateButtonDisappearing();
+        animateButtonDisappearingAndRefadeTextFields();
 
         clearInputsClicked = false;
     }
@@ -981,9 +969,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void initialiseEndYearInput() {
         // Get the current date and set is as the default end date
-        currentYear = endYear = currentCalendarDate.get(Calendar.YEAR);
-        currentMonth = endMonth= currentCalendarDate.get(Calendar.MONTH) + 1; // Java Calendar months start at 0 (Jan)
-        currentDay = endDay = currentCalendarDate.get(Calendar.DAY_OF_MONTH);
+        endYear = currentCalendarDate.get(Calendar.YEAR);
+        endMonth= currentCalendarDate.get(Calendar.MONTH) + 1; // Java Calendar months start at 0 (Jan)
+        endDay = currentCalendarDate.get(Calendar.DAY_OF_MONTH);
 
         // We want 0 to appear before the day or month if it's less than 10 (e.g. 01/01/1960 meaning 1 Jan 1960)
         final String day = DateUtil.convertToPrecedingZero(endDay);
@@ -991,7 +979,7 @@ public class MainActivity extends AppCompatActivity {
         final String year = String.valueOf(endYear);
 
         // Automatically set the end date to be today's date
-        endDateEditText.setText(day + "/" + month + "/" + year);
+        endDateEditText.setText(year + "/" + month + "/" + day);
 
         // Construct the end date object
         endDate = new EndDate(year, month, day);
@@ -1010,9 +998,27 @@ public class MainActivity extends AppCompatActivity {
         AnimationUtil.startPopInAnimation(this, calculateButton);
     }
 
-    private void animateCalculateButtonDisappearing() {
+    private void animateButtonDisappearingAndRefadeTextFields() {
         if (calculateButton.getVisibility() == View.VISIBLE) {
-            AnimationUtil.startPopOutAnimation(this, calculateButton);
+            AnimationUtil.startPopOutAnimation(this, calculateButton, new Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation animation) {
+                    // Ignore
+                }
+
+                @Override
+                public void onAnimationEnd(Animation animation) {
+                    // Now re-fade in the fields
+                    initTextContainers();
+                }
+
+                @Override
+                public void onAnimationRepeat(Animation animation) {
+                    // Ignore
+                }
+            });
+        } else {
+            initTextContainers();
         }
     }
 

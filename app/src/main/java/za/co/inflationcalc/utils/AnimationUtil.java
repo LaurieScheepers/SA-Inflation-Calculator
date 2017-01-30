@@ -29,6 +29,9 @@ public class AnimationUtil {
     }
 
     public static void startPopOutAnimation(final Context context, final View view) {
+        startPopOutAnimation(context, view, null);
+    }
+    public static void startPopOutAnimation(final Context context, final View view, @Nullable final Animation.AnimationListener animationListener) {
         Animation expandIn = AnimationUtils.loadAnimation(context, R.anim.pop_out);
         view.startAnimation(expandIn);
 
@@ -41,6 +44,9 @@ public class AnimationUtil {
             @Override
             public void onAnimationEnd(Animation animation) {
                 view.setVisibility(View.GONE);
+                if (animationListener != null) {
+                    animationListener.onAnimationEnd(animation);
+                }
             }
 
             @Override

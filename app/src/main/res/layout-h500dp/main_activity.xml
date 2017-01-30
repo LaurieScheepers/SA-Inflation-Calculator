@@ -97,7 +97,7 @@
                 android:layout_weight="1"
                 android:layout_gravity="center"
                 android:inputType="none"
-                android:hint="@string/dd_mm_yyyy"
+                android:hint="@string/yyyy_mm_dd"
                 android:nextFocusUp="@id/enter_start_date_edit_text"
                 android:nextFocusLeft="@id/enter_start_date_edit_text"
                 android:layout_marginRight="@dimen/edit_text_margin"
@@ -135,7 +135,7 @@
                 android:layout_weight="1"
                 android:layout_gravity="center"
                 android:inputType="none"
-                android:hint="@string/dd_mm_yyyy"
+                android:hint="@string/yyyy_mm_dd"
                 android:layout_marginRight="@dimen/edit_text_margin"
                 android:layout_marginEnd="@dimen/edit_text_margin"
                 tools:ignore="TextFields" />
