@@ -6,5 +6,6 @@
 
     <color name="edit_text_title">#727272</color>
 
-    <color name="button_focused">#127fbf</color>
+    <color name="signOutButtonColour">#127fbf</color>
+    <color name="signOutButtonRippleColour">#64b5f6</color>
 </resources>

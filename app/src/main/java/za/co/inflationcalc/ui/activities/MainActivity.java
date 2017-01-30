@@ -2,6 +2,7 @@ package za.co.inflationcalc.ui.activities;
 
 import android.content.DialogInterface;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v7.app.AlertDialog;
@@ -18,9 +19,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.Animation;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -49,10 +52,13 @@ import za.co.inflationcalc.model.Amount;
 import za.co.inflationcalc.model.EndDate;
 import za.co.inflationcalc.model.Result;
 import za.co.inflationcalc.model.StartDate;
+import za.co.inflationcalc.ui.PressAnimator;
+import za.co.inflationcalc.utils.AnimationUtil;
 import za.co.inflationcalc.utils.DateUtil;
 import za.co.inflationcalc.utils.KeyboardUtil;
 import za.co.inflationcalc.utils.LogUtil;
 import za.co.inflationcalc.utils.MathUtil;
+import za.co.inflationcalc.utils.callback.FadeInAnimationCompletedCallback;
 
 /**
  * <p>
@@ -78,6 +84,11 @@ public class MainActivity extends AppCompatActivity {
 
     // Define special symbol for SA Rand currency
     public static final String RAND_SYMBOL = "R";
+
+    private LinearLayout startDateContainer;
+    private LinearLayout endDateContainer;
+    private LinearLayout amountContainer;
+    private LinearLayout resultContainer;
 
     // Edit text input fields
     private EditText startDateEditText;
@@ -190,11 +201,8 @@ public class MainActivity extends AppCompatActivity {
         startCalendarDate = Calendar.getInstance(TimeZone.getDefault());
         endCalendarDate = Calendar.getInstance(TimeZone.getDefault());
 
-        // Initialise various edit text boxes
-        startDateEditText = (EditText) findViewById(R.id.enter_start_date_edit_text);
-        endDateEditText = (EditText) findViewById(R.id.enter_end_date_edit_text);
-        amountEditText = (EditText) findViewById(R.id.enter_amount_edit_text);
-        resultEditText = (EditText) findViewById(R.id.result_edit_text);
+        initTextContainers();
+        initEditTextBoxes();
 
         // Initialise date pickers
         startDatePicker = new DatePickerBuilder()
@@ -217,7 +225,12 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    amountEditText.setText(String.valueOf(amount.getValue()));
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
+                        amountEditText.setText(String.valueOf(amount.getValue()));
+                        AnimationUtil.fadeViewIn(amountEditText);
+                    } else {
+                        amountEditText.setText(String.valueOf(amount.getValue()));
+                    }
                 }
             });
         }
@@ -229,7 +242,12 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     LogUtil.d("Setting the result text with value " + result.getCurrentValue());
-                    resultEditText.setText(String.valueOf(result.getCurrentValue()));
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
+                        resultEditText.setText(String.valueOf(result.getCurrentValue()));
+                        AnimationUtil.fadeViewIn(resultEditText);
+                    } else {
+                        resultEditText.setText(String.valueOf(result.getCurrentValue()));
+                    }
 
                     LogUtil.d("Setting the reverse result text with value " + result.getReverseValue());
 
@@ -296,6 +314,9 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     KeyboardUtil.hideKeyboard(getApplicationContext(), amountEditText);
+
+                    validateInputs();
+
                     return true;
                 }
 
@@ -342,7 +363,10 @@ public class MainActivity extends AppCompatActivity {
 
                     // If no numerical value is entered, don't bother parsing the edit text input
                     if (convertedAmount.equals(RAND_SYMBOL)) {
-                        amount.setValue(0);
+                        if (amount != null) {
+                            amount.setValue(0);
+                        }
+
                         return;
                     }
 
@@ -477,9 +501,7 @@ public class MainActivity extends AppCompatActivity {
 
                 startDate = new StartDate(yearStringValue, month, day);
 
-                if (startDateEditText.getEditableText().length() > 0 && endDateEditText.getEditableText().length() > 0) {
-                    calculateButton.setEnabled(true);
-                }
+                validateInputs();
             }
         });
 
@@ -553,15 +575,35 @@ public class MainActivity extends AppCompatActivity {
 
                 endDate = new EndDate(yearStringValue, month, day);
 
-                if (startDateEditText.getEditableText().length() > 0 && endDateEditText.getEditableText().length() > 0) {
-                    calculateButton.setEnabled(true);
-                }
+                validateInputs();
             }
         });
 
         // Initialise the calculate button
         calculateButton = (Button) findViewById(R.id.calculate_btn);
-        calculateButton.setEnabled(false);
+        // Invisible initially - until all the fields are filled
+        calculateButton.setVisibility(View.GONE);
+
+        // Set the button's press animator
+        new PressAnimator(calculateButton, calculateButton, new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                // Ignore
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                // Let the animation finish before showing the reverse result text view
+                if (result != null) {
+                    showReverseResultTextView();
+                }
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+                // Ignore
+            }
+        });
 
         // Handle the clicking of the calculate button
         calculateButton.setOnClickListener(new View.OnClickListener() {
@@ -570,6 +612,52 @@ public class MainActivity extends AppCompatActivity {
                 onCalculateClicked();
             }
         });
+    }
+
+    private void initTextContainers() {
+        startDateContainer = (LinearLayout) findViewById(R.id.start_date_container);
+        endDateContainer = (LinearLayout) findViewById(R.id.end_date_container);
+        amountContainer = (LinearLayout) findViewById(R.id.amount_container);
+        resultContainer = (LinearLayout) findViewById(R.id.result_container);
+
+        // Do cascading fade in of text containers
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
+            startDateContainer.setVisibility(View.GONE);
+            endDateContainer.setVisibility(View.GONE);
+            amountContainer.setVisibility(View.GONE);
+            resultContainer.setVisibility(View.GONE);
+
+            AnimationUtil.fadeViewIn(startDateContainer, new FadeInAnimationCompletedCallback() {
+                @Override
+                public void onCompleted() {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
+                        AnimationUtil.fadeViewIn(endDateContainer, new FadeInAnimationCompletedCallback() {
+                            @Override
+                            public void onCompleted() {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
+                                    AnimationUtil.fadeViewIn(amountContainer, new FadeInAnimationCompletedCallback() {
+                                        @Override
+                                        public void onCompleted() {
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
+                                                AnimationUtil.fadeViewIn(resultContainer);
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    }
+
+    private void initEditTextBoxes() {
+        // Initialise various edit text boxes
+        startDateEditText = (EditText) findViewById(R.id.enter_start_date_edit_text);
+        endDateEditText = (EditText) findViewById(R.id.enter_end_date_edit_text);
+        amountEditText = (EditText) findViewById(R.id.enter_amount_edit_text);
+        resultEditText = (EditText) findViewById(R.id.result_edit_text);
     }
 
     private String normaliseAmount(String amount) {
@@ -597,7 +685,11 @@ public class MainActivity extends AppCompatActivity {
         } else {
             String realValue = normaliseAmount(amountEditText.getText().toString());
 
-            amount.setValue(Double.parseDouble(realValue));
+            try {
+                amount.setValue(Double.parseDouble(realValue));
+            } catch (Exception e) {
+                LogUtil.e("Error in parsing the amount", e);
+            }
 
             if (startDate == null) {
                 throw new IllegalArgumentException("Start Date can't be null");
@@ -642,12 +734,12 @@ public class MainActivity extends AppCompatActivity {
 
                         result = new Result(formattedAnswer, formattedReverseAnswer);
 
-                        resultEditText.setText(String.valueOf(result.getCurrentValue()));
-
-                        reverseResultTv.setText(String.format(getString(R.string.reverse_result_answer),
-                                String.valueOf(result.getReverseValue())));
-
-                        reverseResultTv.setVisibility(View.VISIBLE);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
+                            resultEditText.setText(String.valueOf(result.getCurrentValue()));
+                            AnimationUtil.fadeViewIn(resultEditText);
+                        } else {
+                            resultEditText.setText(String.valueOf(result.getCurrentValue()));
+                        }
 
                         // Remove focus from the "amount" field to the root view
                         if (rootView != null) {
@@ -689,9 +781,7 @@ public class MainActivity extends AppCompatActivity {
         amountEditText.setSelection(amountEditText.getText().length());
         amountEditText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
 
-        if (startDateEditText.getEditableText().length() > 0 && endDateEditText.getEditableText().length() > 0) {
-            calculateButton.setEnabled(true);
-        }
+        validateInputs();
     }
 
     @Override
@@ -801,6 +891,9 @@ public class MainActivity extends AppCompatActivity {
     private void clearUserInputs() {
         clearInputsClicked = true;
 
+        result = null;
+        amount = null;
+
         amountEditText.getEditableText().clear();
         resultEditText.getEditableText().clear();
 
@@ -811,7 +904,15 @@ public class MainActivity extends AppCompatActivity {
         clearStartingYearInput();
         initialiseEndYearInput();
 
-        reverseResultTv.setVisibility(View.GONE);
+        if (reverseResultTv.getVisibility() == View.VISIBLE) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
+                AnimationUtil.fadeViewOut(reverseResultTv);
+            } else {
+                reverseResultTv.setVisibility(View.GONE);
+            }
+        }
+
+        animateCalculateButtonDisappearing();
 
         clearInputsClicked = false;
     }
@@ -844,5 +945,35 @@ public class MainActivity extends AppCompatActivity {
 
         // Construct the end date object
         endDate = new EndDate(year, month, day);
+    }
+
+    private void validateInputs() {
+        if (startDateEditText.getEditableText().length() > 0
+                && endDateEditText.getEditableText().length() > 0
+                && amount != null && amount.getValue() > 0) {
+            animateCalculateButtonAppearing();
+        }
+    }
+
+    private void animateCalculateButtonAppearing() {
+        calculateButton.setVisibility(View.VISIBLE);
+        AnimationUtil.startPopInAnimation(this, calculateButton);
+    }
+
+    private void animateCalculateButtonDisappearing() {
+        if (calculateButton.getVisibility() == View.VISIBLE) {
+            AnimationUtil.startPopOutAnimation(this, calculateButton);
+        }
+    }
+
+    private void showReverseResultTextView() {
+        reverseResultTv.setText(String.format(getString(R.string.reverse_result_answer),
+                String.valueOf(result.getReverseValue())));
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
+            AnimationUtil.fadeViewIn(reverseResultTv);
+        } else {
+            reverseResultTv.setVisibility(View.VISIBLE);
+        }
     }
 }

@@ -238,8 +238,18 @@
             android:layout_below="@id/reverse_answer"
             android:text="@string/calculate_button"
             android:layout_marginTop="@dimen/button_margin"
-            android:textColor="@drawable/button_text_colour_actions"
-            android:background="@drawable/button_actions_primary" />
+            android:textColor="@android:color/white"
+            android:background="@drawable/button_calculate" />
+
+        <LinearLayout
+            android:id="@+id/extra_padding_bottom"
+            android:layout_below="@id/calculate_btn"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingBottom="20dp"
+            android:orientation="horizontal" />
 
     </RelativeLayout>
 
