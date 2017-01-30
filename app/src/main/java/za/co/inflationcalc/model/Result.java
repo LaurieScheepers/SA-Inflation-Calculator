@@ -11,31 +11,31 @@ import org.parceler.Parcel;
 @Parcel
 public class Result {
 
-    public double currentValue;
-    public double reverseValue;
+    public String currentValue;
+    public String reverseValue;
 
     public Result() {
         // Default empty constructor required by Parceler
     }
 
-    public Result(double currentValue, double reverseValue) {
+    public Result(String currentValue, String reverseValue) {
         this.currentValue = currentValue;
         this.reverseValue = reverseValue;
     }
 
-    public double getCurrentValue() {
+    public String getCurrentValue() {
         return currentValue;
     }
 
-    public double getReverseValue() {
+    public String getReverseValue() {
         return reverseValue;
     }
 
-    public void setCurrentValue(double currentValue) {
+    public void setCurrentValue(String currentValue) {
         this.currentValue = currentValue;
     }
 
-    public void setReverseValue(double reverseValue) {
+    public void setReverseValue(String reverseValue) {
         this.reverseValue = reverseValue;
     }
 }

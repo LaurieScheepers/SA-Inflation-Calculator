@@ -18,8 +18,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,10 +35,14 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.parceler.Parcels;
 
+import java.text.NumberFormat;
 import java.util.Calendar;
+import java.util.Currency;
+import java.util.Locale;
 import java.util.TimeZone;
 
 import cz.msebera.android.httpclient.Header;
+import cz.msebera.android.httpclient.util.TextUtils;
 import io.fabric.sdk.android.Fabric;
 import za.co.inflationcalc.R;
 import za.co.inflationcalc.comms.http.RestClient;
@@ -50,14 +56,15 @@ import za.co.inflationcalc.utils.LogUtil;
 import za.co.inflationcalc.utils.MathUtil;
 
 /**
+ * <p>
  * The main activity. This activity (the only one) controls most of the business logic
  * contained in the app,
- * <p/>
- * Created by meyers on 2015-05-07.
+ * </p>
+ * Created by Laurie on 2015-05-07.
  */
 public class MainActivity extends AppCompatActivity {
 
-    public static boolean DEBUG = false;
+    public static boolean DEBUG = true;
 
     // Identifiers for the date pickers
     public static final int START_DATE_EDIT_REF = 0;
@@ -98,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
     private StartDate startDate;
     private EndDate endDate;
 
-    // TODO clean up later. Not necessary for so many member variables
+    // Date variables (year, month, day)
     private int currentYear;
     private int currentMonth;
     private int currentDay;
@@ -122,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
     // Flag indicating that the users cleared all inputs
     private boolean clearInputsClicked;
 
+    // Keep reference to the root view
     private View rootView;
 
     @Override
@@ -213,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    amountEditText.setText(String.format(getString(R.string.amount_value), String.valueOf(amount.getValue())));
+                    amountEditText.setText(String.valueOf(amount.getValue()));
                 }
             });
         }
@@ -225,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     LogUtil.d("Setting the result text with value " + result.getCurrentValue());
-                    resultEditText.setText(String.format(getString(R.string.amount_value), String.valueOf(result.getCurrentValue())));
+                    resultEditText.setText(String.valueOf(result.getCurrentValue()));
 
                     LogUtil.d("Setting the reverse result text with value " + result.getReverseValue());
 
@@ -265,8 +273,31 @@ public class MainActivity extends AppCompatActivity {
         amountEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                // Hide keyboard if user presses enter
-                if (event != null && event.getAction() == KeyEvent.ACTION_DOWN &&  (event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                // Format amount and hide keyboard if user presses enter
+                if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_NEXT) {
+                    final Currency currency = Currency.getInstance("ZAR");
+                    final NumberFormat nf = NumberFormat.getCurrencyInstance(Locale.getDefault());
+                    nf.setCurrency(currency);
+
+                    if (amountEditText.getText().length() > 0) {
+                        String realValue = normaliseAmount(amountEditText.getText().toString());
+
+                        if (!TextUtils.isEmpty(realValue)) {
+                            try {
+                                double realDoubleValue = Double.parseDouble(realValue);
+
+                                String formattedAmount = nf.format(realDoubleValue);
+
+                                // Now format the edit text content
+                                amountEditText.setText(formattedAmount);
+                                amountEditText.setSelection(amountEditText.getText().length());
+                            } catch (NumberFormatException nfe) {
+                                LogUtil.e("Error parsing double: " + realValue, nfe);
+                            } catch (Exception e) {
+                                LogUtil.e("Error formatting amount: " + realValue, e);
+                            }
+                        }
+                    }
 
                     KeyboardUtil.hideKeyboard(getApplicationContext(), amountEditText);
                     return true;
@@ -275,6 +306,8 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
         });
+
+
 
         // Used to update the amount object value
         amountEditText.addTextChangedListener(new TextWatcher() {
@@ -317,6 +350,8 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
 
+                    convertedAmount = normaliseAmount(convertedAmount);
+
                     int indexOfDecimal = convertedAmount.indexOf(".");
 
                     // Limit the decimals to only two
@@ -329,8 +364,6 @@ public class MainActivity extends AppCompatActivity {
                             if (decimals.length() > 2) {
                                 LogUtil.d("Current input is " + convertedAmount);
                                 convertedAmount = convertedAmount.substring(0, indexOfDecimal + 3);
-
-                                LogUtil.d("After conversion, the current input is " + convertedAmount);
 
                                 amountEditText.setText(convertedAmount);
                                 amountEditText.setSelection(amountEditText.getText().length());
@@ -530,86 +563,116 @@ public class MainActivity extends AppCompatActivity {
         calculateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (amountEditText.getText().length() == 0 || amount.getValue() <= 0) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(MainActivity.this, "Please enter an amount in order to make the calculation", Toast.LENGTH_LONG).show();
-                        }
-                    });
-
-                } else {
-                    String realValue = amountEditText.getText().toString().contains(RAND_SYMBOL) ?
-                            amountEditText.getText().toString().replace(RAND_SYMBOL, "") : amountEditText.getText().toString();
-
-                    amount.setValue(Double.parseDouble(realValue));
-
-                    if (startDate == null) {
-                        throw new IllegalArgumentException("Start Date can't be null");
-                    }
-
-                    if (startDate == null) {
-                        throw new IllegalArgumentException("End Date can't be null");
-                    }
-
-                    if (startDate != null && endDate != null) {
-                        RequestParams params = new RequestParams();
-                        params.put("date1", startDate.getApiRepresentation());
-                        params.put("date2", endDate.getApiRepresentation());
-                        params.put("amount", amount.getValue());
-
-                        LogUtil.d("Input params:" + params.toString());
-
-                        // Do the GET result API call
-                        RestClient.get(MainActivity.this, RestClient.BASE_URL, params, new JsonHttpResponseHandler() {
-                            @Override
-                            public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
-                                try {
-                                    LogUtil.d("Result: " + response.toString());
-
-                                    double answer = MathUtil.round(response.optDouble("Answer"), 2);
-                                    double reverseAnswer = MathUtil.round(response.optDouble("AnswerReverse"), 2);
-
-                                    result = new Result(answer, reverseAnswer);
-
-                                    resultEditText.setText(String.format(getString(R.string.amount_value), String.valueOf(result.getCurrentValue())));
-
-                                    reverseResultTv.setText(String.format(getString(R.string.reverse_result_answer),
-                                            String.valueOf(result.getReverseValue())));
-
-                                    reverseResultTv.setVisibility(View.VISIBLE);
-
-                                    // Remove focus from the "amount" field to the root view
-                                    if (rootView != null) {
-                                        rootView.requestFocus();
-                                    }
-
-                                } catch (Exception e) {
-                                    LogUtil.e("Error in parsing the Inflationcalc response", e);
-                                }
-                            }
-
-                            @Override
-                            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                                LogUtil.e("Inflationcalc request failed. Status code = " + statusCode, throwable);
-                            }
-
-                            @Override
-                            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
-                                LogUtil.e("Inflationcalc Request failed. Status code = " + statusCode, throwable);
-                            }
-
-                            @Override
-                            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONArray errorResponse) {
-                                LogUtil.e("Inflationcalc Request failed. Status code = " + statusCode, throwable);
-                            }
-                        });
-                    } else {
-                        Toast.makeText(getApplicationContext(), "Error in calculating the result, check if all the fields are filled in", Toast.LENGTH_LONG).show();
-                    }
-                }
+                onCalculateClicked();
             }
         });
+    }
+
+    private String normaliseAmount(String amount) {
+        // Strip out rand symbol
+        amount = amount.replace(RAND_SYMBOL, "");
+        // Strip out white spaces
+        amount = amount.replaceAll("\\s+","");
+        // Also strip out "non-breaking space" (inserted by the currency formatter)
+        amount = amount.replace("\u00A0", "");
+        // Replace commas with decimal points
+        amount = amount.replace(",", ".");
+
+        return amount;
+    }
+
+    private void onCalculateClicked() {
+        if (amountEditText.getText().length() == 0 || amount.getValue() <= 0) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(MainActivity.this, "Please enter an amount in order to make the calculation", Toast.LENGTH_LONG).show();
+                }
+            });
+
+        } else {
+            String realValue = normaliseAmount(amountEditText.getText().toString());
+
+            amount.setValue(Double.parseDouble(realValue));
+
+            if (startDate == null) {
+                throw new IllegalArgumentException("Start Date can't be null");
+            }
+
+            if (endDate == null) {
+                throw new IllegalArgumentException("End Date can't be null");
+            }
+
+            doGetResultApiCall(startDate, endDate, amount);
+        }
+    }
+
+    private void doGetResultApiCall(StartDate startDate, EndDate endDate, Amount amount) {
+        if (startDate != null && endDate != null) {
+            RequestParams params = new RequestParams();
+            params.put("date1", startDate.getApiRepresentation());
+            params.put("date2", endDate.getApiRepresentation());
+            params.put("amount", amount.getValue());
+
+            LogUtil.d("Input params:" + params.toString());
+
+            // Do the GET result API call
+            RestClient.get(MainActivity.this, RestClient.BASE_URL, params, new JsonHttpResponseHandler() {
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
+                    try {
+                        LogUtil.d("Result: " + response.toString());
+
+                        String formattedAnswer;
+                        String formattedReverseAnswer;
+
+                        double answer = MathUtil.round(response.optDouble("Answer"), 2);
+                        double reverseAnswer = MathUtil.round(response.optDouble("AnswerReverse"), 2);
+
+                        final Currency currency = Currency.getInstance("ZAR");
+                        final NumberFormat nf = NumberFormat.getCurrencyInstance(Locale.getDefault());
+                        nf.setCurrency(currency);
+
+                        formattedAnswer = nf.format(answer);
+                        formattedReverseAnswer = nf.format(reverseAnswer);
+
+                        result = new Result(formattedAnswer, formattedReverseAnswer);
+
+                        resultEditText.setText(String.valueOf(result.getCurrentValue()));
+
+                        reverseResultTv.setText(String.format(getString(R.string.reverse_result_answer),
+                                String.valueOf(result.getReverseValue())));
+
+                        reverseResultTv.setVisibility(View.VISIBLE);
+
+                        // Remove focus from the "amount" field to the root view
+                        if (rootView != null) {
+                            rootView.requestFocus();
+                        }
+
+                    } catch (Exception e) {
+                        LogUtil.e("Error in parsing the Inflationcalc response", e);
+                    }
+                }
+
+                @Override
+                public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
+                    LogUtil.e("Inflationcalc request failed. Status code = " + statusCode, throwable);
+                }
+
+                @Override
+                public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
+                    LogUtil.e("Inflationcalc Request failed. Status code = " + statusCode, throwable);
+                }
+
+                @Override
+                public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONArray errorResponse) {
+                    LogUtil.e("Inflationcalc Request failed. Status code = " + statusCode, throwable);
+                }
+            });
+        } else {
+            Toast.makeText(getApplicationContext(), "Error in calculating the result, check if all the fields are filled in", Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override

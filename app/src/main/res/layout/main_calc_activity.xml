@@ -81,6 +81,15 @@
                 android:layout_gravity="center"
                 tools:ignore="RtlHardcoded" />
 
+            <!-- Dummy item to prevent EditText below from receiving focus -->
+            <LinearLayout
+                android:id="@+id/dummy_linear_layout"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:layout_width="0px"
+                android:layout_height="0px"
+                android:orientation="horizontal" />
+
             <EditText
                 android:id="@+id/enter_start_date_edit_text"
                 android:layout_width="match_parent"
@@ -90,6 +99,9 @@
                 android:hint="@string/dd_mm_yyyy"
                 android:textSize="@dimen/edit_text_title_text_size"
                 android:layout_marginRight="@dimen/edit_text_margin"
+                android:nextFocusUp="@id/enter_start_date_edit_text"
+                android:nextFocusLeft="@id/enter_start_date_edit_text"
+                android:inputType="none"
                 tools:ignore="RtlHardcoded,TextFields" />
 
         </LinearLayout>
@@ -126,6 +138,7 @@
                 android:textSize="@dimen/edit_text_title_text_size"
                 android:layout_marginRight="@dimen/edit_text_margin"
                 android:layout_marginEnd="@dimen/edit_text_margin"
+                android:inputType="none"
                 tools:ignore="RtlHardcoded,TextFields" />
 
         </LinearLayout>
@@ -158,7 +171,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:inputType="numberDecimal"
+                android:inputType="numberDecimal|textNoSuggestions"
                 android:layout_weight="1"
                 android:textSize="@dimen/edit_text_title_text_size"
                 android:hint="@string/enter_amount_hint"
@@ -198,6 +211,7 @@
                 android:layout_weight="1"
                 android:layout_gravity="center"
                 android:hint="@string/current_value_hint"
+                android:inputType="numberDecimal|textNoSuggestions"
                 android:clickable="false"
                 android:focusable="false"
                 android:focusableInTouchMode="false"
